@@ -24,18 +24,44 @@ const Home = () => {
     };
 
     const [trades, setTrades] = useState([]);
+    const [filters, setFilters] = useState({
+        symbol: "",
+        side: "",
+        date_from: "",
+        date_to: "",
+        limit: 10,
+    });
+    const [loading, setLoading] = useState(false);
+
+    const fetchTrades = async (activeFilters = filters) => {
+        try {
+        setLoading(true);
+        setError("");
+        const cleanedFilters = Object.fromEntries(
+            Object.entries(activeFilters).filter(([key, value]) => value !== "" && value !== null && value !== undefined)
+        );
+        const res = await api.get("/trades/", { params: cleanedFilters });
+        setTrades(res.data);
+        } catch (err) {
+        console.error("Failed to fetch trades:", err);
+        setError("Failed to fetch trades");
+        } finally {
+        setLoading(false);
+        }
+    };
 
     useEffect(() => {
         const token = localStorage.getItem("token");
         setIsLoggedIn(!!token);
-
         if (!token) return;
+        fetchTrades();
     }, []);
 
     const addTrade = async (trade) => {
         try {
         const res = await api.post("/trades/", trade);
         setTrades([...trades, res.data]);
+        handleTradeAdded();
         } catch (err) {
             if (err.response && err.response.status === 401) {
             setError("❌ Unauthorized: Please log in to add trades.");
@@ -44,6 +70,17 @@ const Home = () => {
             }
         }
     };
+     const handleTradeAdded = () => {
+        fetchTrades(); 
+    };
+
+    const handleFilterChange = (newFilters) => {
+        setFilters((prev) => ({ ...prev, ...newFilters }));
+    };
+
+    const handleApplyFilters = () => {
+        fetchTrades(filters);
+    }
 
     const navigate = useNavigate();
 
@@ -62,7 +99,14 @@ const Home = () => {
             <div className="p-4">
                 <h1>📊 Trade Journal</h1>
                 <TradeForm onAdd={addTrade} />
-                <TradeList/>
+                <TradeList
+                    trades={trades}
+                    filters={filters}
+                    onFilterChange={handleFilterChange}
+                    onApplyFilters={handleApplyFilters}
+                    loading={loading}
+                    error={error}
+                />
             </div>
         )}
         </div>

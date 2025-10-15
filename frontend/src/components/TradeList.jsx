@@ -1,40 +1,9 @@
-import React, { useEffect, useState } from "react";
-import api from "../services/api";
+import React from "react";
 
-const TradeList = () => {
-  const [trades, setTrades] = useState([]);
-  const [symbol, setSymbol] = useState("");
-  const [side, setSide] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [limit, setLimit] = useState(10);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const fetchTrades = async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const params = {};
-      if (symbol) params.symbol = symbol;
-      if (side) params.side = side;
-      if (fromDate) params.date_from = fromDate;
-      if (toDate) params.date_to = toDate;
-      if (limit) params.limit = limit;
-
-      const res = await api.get("/trades/", { params });
-      setTrades(res.data);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch trades.");
-    } finally {
-      setLoading(false);
-    }
+const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, error }) => {
+  const handleInput = (e) => {
+    onFilterChange({ [e.target.name]: e.target.value });
   };
-
-  useEffect(() => {
-    fetchTrades();
-  }, [symbol, side, fromDate, toDate, limit]);
 
   const formatDate = (isoString) => {
     const date = new Date(isoString);
@@ -54,15 +23,16 @@ const TradeList = () => {
       {/* Filters */}
       <div className="flex flex-wrap gap-2 mb-4">
         <input
-          type="text"
+          name="symbol"
           placeholder="Symbol..."
-          value={symbol}
-          onChange={(e) => setSymbol(e.target.value)}
+          value={filters.symbol}
+          onChange={handleInput}
           className="border p-2 rounded"
         />
         <select
-          value={side}
-          onChange={(e) => setSide(e.target.value)}
+          name="side"
+          value={filters.side}
+          onChange={handleInput}
           className="border p-2 rounded"
         >
           <option value="">All sides</option>
@@ -70,20 +40,23 @@ const TradeList = () => {
           <option value="sell">Sell</option>
         </select>
         <input
+          name="date_from"
           type="date"
-          value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
+          value={filters.date_from}
+          onChange={handleInput}
           className="border p-2 rounded"
         />
         <input
+          name="date_to"
           type="date"
-          value={toDate}
-          onChange={(e) => setToDate(e.target.value)}
+          value={filters.date_to}
+          onChange={handleInput}
           className="border p-2 rounded"
         />
         <select
-          value={limit}
-          onChange={(e) => setLimit(Number(e.target.value))}
+          name="limit"
+          value={filters.limit}
+          onChange={handleInput}
           className="border p-2 rounded"
         >
           <option value={5}>Last 5</option>
@@ -93,21 +66,20 @@ const TradeList = () => {
           <option value={100}>Last 100</option>
         </select>
         <button
-          onClick={fetchTrades}
+          onClick={onApplyFilters}
           className="bg-blue-600 text-white px-4 py-2 rounded"
         >
-          Apply Filters
+          Apply
         </button>
       </div>
 
-      {/* Table */}
       {loading ? (
         <p>Loading...</p>
       ) : error ? (
         <p className="text-red-600">{error}</p>
       ) : (
         <table className="min-w-full border border-gray-300 rounded-lg">
-          <thead className="bg-gray-200">
+          <thead className="bg-green-950">
             <tr>
               <th className="p-2 border">Date</th>
               <th className="p-2 border">Symbol</th>
@@ -122,7 +94,7 @@ const TradeList = () => {
           <tbody>
             {trades.length > 0 ? (
               trades.map((trade) => (
-                <tr key={trade.id} className="text-center hover:bg-gray-100">
+                <tr key={trade.id} className="text-center hover:bg-gray-900">
                   <td className="p-2 border">{formatDate(trade.timestamp)}</td>
                   <td className="p-2 border">{trade.symbol}</td>
                   <td
