@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DECIMAL, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DECIMAL, DateTime, ForeignKey, func
 from sqlalchemy.orm import relationship
 from .database import Base
 import datetime
@@ -6,9 +6,10 @@ import datetime
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), unique=True, index=True, nullable=False)   # length required
-    hashed_password = Column(String(255), nullable=False)
+    uid = Column(String(128), primary_key=True, index=True)  # Firebase UID
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    name = Column(String(255), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     trades = relationship("Trade", back_populates="owner")
 
@@ -29,6 +30,5 @@ class Trade(Base):
     pnl = Column(DECIMAL(20, 8))  # profit/loss
 
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
-
-    owner_id = Column(Integer, ForeignKey("users.id"))
+    owner_id = Column(String(128), ForeignKey("users.uid"))
     owner = relationship("User", back_populates="trades")

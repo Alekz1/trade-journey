@@ -1,26 +1,23 @@
-import { useState, useEffect } from "react";
-import TradeForm from "./components/TradeForm";
-import TradeList from "./components/TradeList";
-import api from "./services/api";
+import {
+    BrowserRouter as Router,
+    Routes,
+    Route,
+    Navigate,
+} from "react-router-dom";
+import AuthPage from "./AuthPage";
+import { useNavigate } from "react-router-dom";
+import Home from "./Home";
 
 function App() {
-  const [trades, setTrades] = useState([]);
-
-  useEffect(() => {
-    api.get("/trades/").then(res => setTrades(res.data));
-  }, []);
-
-  const addTrade = async (trade) => {
-    const res = await api.post("/trades/", trade);
-    setTrades([...trades, res.data]);
-  };
-
   return (
-    <div className="p-4">
-      <h1>📊 Trade Journal</h1>
-      <TradeForm onAdd={addTrade} />
-      <TradeList trades={trades} />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/auth" element={<AuthPage />} />
+        {/* fallback for unknown routes */}
+        <Route path="*" element={<Home />} />
+      </Routes>
+    </Router>
   );
 }
 

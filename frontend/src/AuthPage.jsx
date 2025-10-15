@@ -1,0 +1,84 @@
+import React, { useState } from "react";
+import {
+  auth,
+  googleProvider,
+  signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "./services/firebase";
+
+function AuthPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  // Google login
+  const handleGoogleLogin = async () => {
+    const result = await signInWithPopup(auth, googleProvider);
+    const token = await result.user.getIdToken();
+    await sendTokenToBackend(token);
+  };
+
+  // Email signup
+  const handleSignup = async () => {
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    const token = await result.user.getIdToken();
+    await sendTokenToBackend(token);
+  };
+
+  // Email login
+  const handleLogin = async () => {
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    const token = await result.user.getIdToken();
+    await sendTokenToBackend(token);
+  };
+
+  // Send token to backend
+  const sendTokenToBackend = async (token) => {
+    const response = await fetch("http://localhost:8000/auth/firebase", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    });
+    const data = await response.json();
+    console.log("Backend verified:", data);
+     // Save the backend JWT in localStorage
+    localStorage.setItem("token", data.access_token);
+
+    // Redirect to home
+    window.location.href = "/";
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center h-screen gap-4">
+      <h1 className="text-2xl font-bold">Trade Journal Login</h1>
+      <input
+        type="email"
+        placeholder="Email"
+        className="border p-2 rounded"
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <input
+        type="password"
+        placeholder="Password"
+        className="border p-2 rounded"
+        onChange={(e) => setPassword(e.target.value)}
+      />
+      <div className="flex gap-2">
+        <button onClick={handleLogin} className="px-4 py-2 bg-green-600 text-white rounded">
+          Login
+        </button>
+        <button onClick={handleSignup} className="px-4 py-2 bg-blue-600 text-white rounded">
+          Sign Up
+        </button>
+      </div>
+      <button
+        onClick={handleGoogleLogin}
+        className="px-6 py-2 bg-red-600 text-white rounded"
+      >
+        Sign in with Google
+      </button>
+    </div>
+  );
+}
+
+export default AuthPage;

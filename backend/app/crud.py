@@ -1,18 +1,21 @@
+from datetime import datetime
 from sqlalchemy.orm import Session
 from . import models, schemas
 from passlib.hash import bcrypt
 from decimal import Decimal
 
-def get_user_by_email(db: Session, email: str):
-    return db.query(models.User).filter(models.User.email == email).first()
 
-def create_user(db: Session, user: schemas.UserCreate):
-    hashed_pw = bcrypt.hash(user.password)
-    db_user = models.User(email=user.email, hashed_password=hashed_pw)
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+def get_user_by_uid(db: Session, uid: str):
+    return db.query(models.User).filter(models.User.uid == uid).first()
+
+def get_or_create_user(db: Session, uid: str, email: str, name: str | None = None):
+    user = get_user_by_uid(db, uid)
+    if not user:
+        user = models.User(uid=uid, email=email, name=name)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    return user
 
 def create_trade(db: Session, trade: schemas.TradeCreate, user_id: int):
     # Convert numeric inputs to Decimal for precise calculation
@@ -41,5 +44,27 @@ def create_trade(db: Session, trade: schemas.TradeCreate, user_id: int):
     db.refresh(db_trade)
     return db_trade
 
-def get_trades(db: Session, user_id: int, skip: int = 0, limit: int = 100):
-    return db.query(models.Trade).filter(models.Trade.owner_id == user_id).offset(skip).limit(limit).all()
+def get_trades(
+    db: Session,
+    user_id: int,
+    symbol: str = None,
+    side: str = None,
+    date_from: datetime = None,
+    date_to: datetime = None,
+    limit: int = 100,
+):
+    query = db.query(models.Trade).filter(models.Trade.owner_id == user_id)
+
+    if symbol:
+        query = query.filter(models.Trade.symbol.ilike(f"%{symbol}%"))
+
+    if side:
+        query = query.filter(models.Trade.side.ilike(side))
+
+    if date_from:
+        query = query.filter(models.Trade.timestamp >= date_from)
+
+    if date_to:
+        query = query.filter(models.Trade.timestamp <= date_to)
+
+    return query.order_by(models.Trade.timestamp.desc()).limit(limit).all()
