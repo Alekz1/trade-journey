@@ -69,3 +69,9 @@ def list_trades(
         date_to=date_to,
         limit=limit
     )
+@app.get("/users/me/pnl/", response_model=schemas.UserTradeSummary)
+def get_user_pnl(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    return crud.get_user_trade_summary(db=db, user_id=user.uid)

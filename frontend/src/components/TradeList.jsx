@@ -33,7 +33,8 @@ const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, e
           name="side"
           value={filters.side}
           onChange={handleInput}
-          className="border p-2 rounded"
+          className="border p-2 rounded  text-white"
+          style={{ backgroundColor: '#242424' }}
         >
           <option value="">All sides</option>
           <option value="buy">Buy</option>
@@ -58,6 +59,7 @@ const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, e
           value={filters.limit}
           onChange={handleInput}
           className="border p-2 rounded"
+          style={{ backgroundColor: '#242424' }}
         >
           <option value={5}>Last 5</option>
           <option value={10}>Last 10</option>

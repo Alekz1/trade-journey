@@ -3,6 +3,7 @@ import api from "./services/api";
 import { useState, useEffect } from "react";
 import TradeForm from "./components/TradeForm";
 import TradeList from "./components/TradeList";
+import TradePnL from "./components/TradePnL";
 import { Link } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth";
 import { auth } from "./services/firebase";
@@ -20,10 +21,11 @@ const Home = () => {
         const auth = getAuth()
         signOut(auth).catch((err) => console.error("Firebase logout error:", err));
         localStorage.removeItem("token");
-        window.location.href = "/auth";
+        //window.location.href = "/auth";
     };
 
     const [trades, setTrades] = useState([]);
+    const [totalpnl, setTotalPnl] = useState([]);
     const [filters, setFilters] = useState({
         symbol: "",
         side: "",
@@ -98,6 +100,7 @@ const Home = () => {
         {isLoggedIn &&(
             <div className="p-4">
                 <h1>📊 Trade Journal</h1>
+                <TradePnL/>
                 <TradeForm onAdd={addTrade} />
                 <TradeList
                     trades={trades}

@@ -10,6 +10,7 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     name = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    totalpnl = Column(DECIMAL(20, 8), default=0)
 
     trades = relationship("Trade", back_populates="owner")
 
@@ -32,3 +33,11 @@ class Trade(Base):
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
     owner_id = Column(String(128), ForeignKey("users.uid"))
     owner = relationship("User", back_populates="trades")
+
+class UserTradeSummary(Base):
+    __tablename__ = "user_trade_summary"
+
+    user_id = Column(String(128), ForeignKey("users.uid"), primary_key=True)
+    total_pnl = Column(DECIMAL(20, 8), default=0)
+
+    user = relationship("User", backref="summary")

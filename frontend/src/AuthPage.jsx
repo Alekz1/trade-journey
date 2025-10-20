@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   auth,
   googleProvider,
@@ -6,6 +6,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "./services/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 function AuthPage() {
   const [email, setEmail] = useState("");
@@ -47,6 +48,17 @@ function AuthPage() {
     // Redirect to home
     window.location.href = "/";
   };
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const token = await user.getIdToken();
+        await sendTokenToBackend(token);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
 
   return (
     <div className="flex flex-col items-center justify-center h-screen gap-4">

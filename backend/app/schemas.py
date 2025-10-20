@@ -33,3 +33,10 @@ class User(UserBase):
 
     class Config:
         orm_mode = True
+
+class UserTradeSummary(BaseModel):
+    user_id: str
+    total_pnl: float
+
+    class Config:
+        orm_mode = True

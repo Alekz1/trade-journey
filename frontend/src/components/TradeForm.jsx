@@ -20,16 +20,16 @@ export default function TradeForm({ onAdd }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2">
-      <input name="symbol" value={form.symbol} onChange={handleChange} placeholder="Symbol" />
-      <select name="side" value={form.side} onChange={handleChange}>
-        <option value="buy">Buy</option>
-        <option value="sell">Sell</option>
+    <form onSubmit={handleSubmit} className="space-y-2 flex flex-wrap gap-2 mb-4">
+      <input name="symbol" value={form.symbol} onChange={handleChange} placeholder="Symbol" className="border p-2 rounded" />
+      <select name="side" value={form.side} onChange={handleChange} className="border p-2 rounded">
+        <option value="buy" className="border p-2 rounded">Buy</option>
+        <option value="sell" className="border p-2 rounded">Sell</option>
       </select>
-      <input name="entry_price" value={form.entry_price} onChange={handleChange} placeholder="Entry" />
-      <input name="exit_price" value={form.exit_price} onChange={handleChange} placeholder="Exit" />
-      <input name="quantity" value={form.quantity} onChange={handleChange} placeholder="Quantity" />
-      <input name="fees" value={form.fees} onChange={handleChange} placeholder="Fees" />
+      <input name="entry_price" value={form.entry_price} onChange={handleChange} placeholder="Entry" className="border p-2 rounded" />
+      <input name="exit_price" value={form.exit_price} onChange={handleChange} placeholder="Exit" className="border p-2 rounded"/>
+      <input name="quantity" value={form.quantity} onChange={handleChange} placeholder="Quantity" className="border p-2 rounded"/>
+      <input name="fees" value={form.fees} onChange={handleChange} placeholder="Fees" className="border p-2 rounded"/>
       <button type="submit">Add Trade</button>
     </form>
   );

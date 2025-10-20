@@ -22,7 +22,7 @@ if not firebase_admin._apps:
 # JWT settings
 SECRET_KEY = os.getenv("SECRET_KEY")  # use env variable in prod
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 1
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 class TokenData(BaseModel):
     token: str
@@ -57,7 +57,7 @@ async def verify_firebase_token(data: TokenData, db: Session = Depends(database.
 
         return {"access_token": access_token, "token_type": "bearer"}
     except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid Firebase token")
+        raise HTTPException(status_code=401, detail="Invalid Firebase token"+ str(e))
 
 @router.post("/auth/refresh")
 async def refresh_access_token(data: TokenData, db: Session = Depends(database.get_db)):
@@ -81,5 +81,5 @@ async def refresh_access_token(data: TokenData, db: Session = Depends(database.g
         return {"access_token": access_token, "token_type": "bearer"}
 
     except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid Firebase token")
+        raise HTTPException(status_code=401, detail="Invalid Firebase token"+ str(e))
 

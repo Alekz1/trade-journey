@@ -1,4 +1,5 @@
 from datetime import datetime
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from . import models, schemas
 from passlib.hash import bcrypt
@@ -41,6 +42,7 @@ def create_trade(db: Session, trade: schemas.TradeCreate, user_id: int):
     )
     db.add(db_trade)
     db.commit()
+    update_user_trade_summary(db, user_id)
     db.refresh(db_trade)
     return db_trade
 
@@ -68,3 +70,29 @@ def get_trades(
         query = query.filter(models.Trade.timestamp <= date_to)
 
     return query.order_by(models.Trade.timestamp.desc()).limit(limit).all()
+
+def get_user_trade_summary(db: Session, user_id: int):
+    summary = db.query(models.UserTradeSummary).get(user_id)
+    if not summary:
+        total_pnl = db.query(
+            func.coalesce(func.sum(models.Trade.pnl), 0)
+        ).filter(models.Trade.owner_id == user_id).scalar()
+        summary = models.UserTradeSummary(user_id=user_id, total_pnl=total_pnl)
+        db.add(summary)
+        db.commit()
+    return summary
+
+def update_user_trade_summary(db: Session, user_id: int):
+    total_pnl = db.query(
+        func.coalesce(func.sum(models.Trade.pnl), 0)
+    ).filter(models.Trade.owner_id == user_id).scalar()
+
+    summary = db.query(models.UserTradeSummary).get(user_id)
+    if summary:
+        summary.total_pnl = total_pnl
+    else:
+        summary = models.UserTradeSummary(user_id=user_id, total_pnl=total_pnl)
+        db.add(summary)
+
+    db.commit()
+    return summary  
