@@ -7,7 +7,7 @@ export default function TradeForm({ onAdd }) {
     entry_price: "",
     exit_price: "",
     quantity: "",
-    fees: 0,
+    fees: "",
   });
 
   const handleChange = (e) =>
@@ -15,15 +15,19 @@ export default function TradeForm({ onAdd }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!form.symbol || !form.entry_price || !form.exit_price || !form.quantity) {
+      alert("Please fill in all required fields.");
+      return;
+    }
     onAdd(form);
-    setForm({ symbol: "", side: "buy", entry_price: "", exit_price: "", quantity: "", fees: 0 });
+    setForm({ symbol: "", side: "buy", entry_price: "", exit_price: "", quantity: "", fees: "" });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2 flex flex-wrap gap-2 mb-4">
       <input name="symbol" value={form.symbol} onChange={handleChange} placeholder="Symbol" className="border p-2 rounded" />
-      <select name="side" value={form.side} onChange={handleChange} className="border p-2 rounded">
-        <option value="buy" className="border p-2 rounded">Buy</option>
+      <select name="side" value={form.side} onChange={handleChange} className="border p-2 rounded"style={{ backgroundColor: '#242424' }}>
+        <option value="buy" className="border p-2 rounded" >Buy</option>
         <option value="sell" className="border p-2 rounded">Sell</option>
       </select>
       <input name="entry_price" value={form.entry_price} onChange={handleChange} placeholder="Entry" className="border p-2 rounded" />

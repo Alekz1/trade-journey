@@ -11,7 +11,7 @@ export default function LoginSignupButton() {
   return (
     <button
       onClick={handleClick}
-      className="px-4 py-2 bg-blue-600 text-white rounded"
+      className="p-2 px-6 absolute rounded-md border right-6 border-green-600/60 text-green-600 bg-black/70 hover:border-green-300 transition"
     >
       Login / Sign Up
     </button>

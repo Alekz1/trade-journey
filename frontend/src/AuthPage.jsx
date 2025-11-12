@@ -46,7 +46,7 @@ function AuthPage() {
     localStorage.setItem("token", data.access_token);
 
     // Redirect to home
-    window.location.href = "/";
+    window.location.href = "/home";
   };
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {

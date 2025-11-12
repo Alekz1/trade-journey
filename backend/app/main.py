@@ -1,5 +1,5 @@
 from datetime import datetime
-from fastapi import FastAPI, Depends, Query
+from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from .auth import router
@@ -69,9 +69,25 @@ def list_trades(
         date_to=date_to,
         limit=limit
     )
-@app.get("/users/me/pnl/", response_model=schemas.UserTradeSummary)
+@app.get("/users/me/stats/", response_model=schemas.UserTradeSummary)
 def get_user_pnl(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
     return crud.get_user_trade_summary(db=db, user_id=user.uid)
+@app.get("/users/me/stats/refresh/", response_model=schemas.UserTradeSummary)
+def get_user_pnl(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    return crud.update_user_trade_summary(db=db, user_id=user.uid)
+@app.delete("/delete/trade/{trade_id}/")
+def delete_trade(
+    trade_id: int,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    success = crud.delete_trade(db=db, trade_id=trade_id, user_id=user.uid)
+    if not success:
+        raise HTTPException(status_code=404, detail="Trade not found")
+    return {"detail": success}

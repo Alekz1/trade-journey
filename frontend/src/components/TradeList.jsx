@@ -1,6 +1,7 @@
 import React from "react";
+import api from "../services/api";
 
-const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, error }) => {
+const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, error, refresh }) => {
   const handleInput = (e) => {
     onFilterChange({ [e.target.name]: e.target.value });
   };
@@ -15,6 +16,11 @@ const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, e
       minute: "2-digit",
     });
   };
+
+  const deleteTrade = async (tradeId) => {
+    await api.delete(`/delete/trade/${tradeId}/`)
+    refresh();
+  }
 
   return (
     <div className="mt-6">
@@ -91,6 +97,7 @@ const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, e
               <th className="p-2 border">Qty</th>
               <th className="p-2 border">PnL</th>
               <th className="p-2 border">Fees</th>
+              <th className="p-2 border">Delete</th>
             </tr>
           </thead>
           <tbody>
@@ -119,6 +126,7 @@ const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, e
                     {trade.pnl.toFixed(2)}
                   </td>
                   <td className="p-2 border">{trade.fees}</td>
+                  <td><button onClick={()=>deleteTrade(trade.id)}>DEL</button></td>
                 </tr>
               ))
             ) : (

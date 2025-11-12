@@ -14,13 +14,13 @@ export default function LogoutButton() {
     localStorage.removeItem("token");
 
     // Redirect to login page
-    navigate("/auth");
+    navigate("/");
   };
 
   return (
     <button
       onClick={handleLogout}
-      className="px-4 py-2 bg-red-500 text-white rounded"
+      className="p-2 px-6 rounded-md border right-6 border-green-600/60 text-green-600 bg-black/70 hover:border-green-300 transition"
     >
       Logout
     </button>

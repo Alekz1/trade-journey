@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 from . import models, schemas
 from passlib.hash import bcrypt
@@ -24,11 +24,12 @@ def create_trade(db: Session, trade: schemas.TradeCreate, user_id: int):
     exit_price = Decimal(trade.exit_price)
     quantity = Decimal(trade.quantity)
     fees = Decimal(trade.fees or 0)
+    timestamp = trade.timestamp or datetime.utcnow()
 
     # PNL calculation
-    if trade.side == "buy":
+    if trade.side.lower() == "buy":
         pnl = (exit_price - entry_price) * quantity - fees
-    elif trade.side == "sell":
+    elif trade.side.lower() == "sell":
         pnl = (entry_price - exit_price) * quantity - fees
     db_trade = models.Trade(
         symbol=trade.symbol,
@@ -38,6 +39,7 @@ def create_trade(db: Session, trade: schemas.TradeCreate, user_id: int):
         quantity=quantity,
         fees=fees,
         pnl=pnl,
+        timestamp=timestamp,
         owner_id=user_id
     )
     db.add(db_trade)
@@ -87,12 +89,39 @@ def update_user_trade_summary(db: Session, user_id: int):
         func.coalesce(func.sum(models.Trade.pnl), 0)
     ).filter(models.Trade.owner_id == user_id).scalar()
 
+    total_trades = db.query(
+        func.count(models.Trade.id)
+    ).filter(models.Trade.owner_id == user_id).scalar()
+
+    # wins count (int)
+    wins = db.query(func.count(models.Trade.id))\
+        .filter(models.Trade.owner_id == user_id, models.Trade.pnl > 0)\
+        .scalar() or 0
+
+    # winrate as percentage (float)
+    winrate = (wins / total_trades * 100.0) if total_trades else 0.0
+
+    
+
     summary = db.query(models.UserTradeSummary).get(user_id)
     if summary:
         summary.total_pnl = total_pnl
+        summary.winrate = winrate
+        summary.total_trades = total_trades
+        
     else:
         summary = models.UserTradeSummary(user_id=user_id, total_pnl=total_pnl)
         db.add(summary)
 
     db.commit()
-    return summary  
+    return summary 
+
+def delete_trade(db: Session, trade_id: int, user_id: int):
+    trade = db.query(models.Trade).filter(models.Trade.id == trade_id, models.Trade.owner_id == user_id).first()
+    if trade:
+        print(trade)
+        db.delete(trade)
+        db.commit()
+        update_user_trade_summary(db, user_id)
+        return trade
+    return None 

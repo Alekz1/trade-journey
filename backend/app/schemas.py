@@ -9,6 +9,7 @@ class TradeBase(BaseModel):
     exit_price: float
     quantity: float
     fees: Optional[float] = 0.0
+    timestamp: Optional[datetime.datetime] = None
 
 class TradeCreate(TradeBase):
     pass
@@ -37,6 +38,11 @@ class User(UserBase):
 class UserTradeSummary(BaseModel):
     user_id: str
     total_pnl: float
+    winrate: float
+    total_trades: int
 
     class Config:
         orm_mode = True
+class TradeDelete(BaseModel):
+    trade_id: int
+    user_id: int

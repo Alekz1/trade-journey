@@ -79,7 +79,7 @@ api.interceptors.response.use(
       isRefreshing = false;
       localStorage.removeItem("token");
       try { auth.signOut(); } catch (e) {}
-      //window.location.href = "/auth";
+      window.location.href = "/";
       return Promise.reject(err);
     }
   }

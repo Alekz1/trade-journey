@@ -39,5 +39,7 @@ class UserTradeSummary(Base):
 
     user_id = Column(String(128), ForeignKey("users.uid"), primary_key=True)
     total_pnl = Column(DECIMAL(20, 8), default=0)
+    winrate = Column(DECIMAL(5, 2), default=0)
+    total_trades = Column(Integer, default=0)
 
     user = relationship("User", backref="summary")
