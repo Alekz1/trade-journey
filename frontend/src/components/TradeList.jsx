@@ -39,7 +39,7 @@ const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, e
           name="side"
           value={filters.side}
           onChange={handleInput}
-          className="border p-2 rounded  text-white"
+          className="border p-2 rounded"
           style={{ backgroundColor: '#242424' }}
         >
           <option value="">All sides</option>

@@ -5,7 +5,7 @@ const Winrate = ({ winrate }) => {
             <h2>📊 Winrate </h2>
 
             {winrate !== null && winrate !== undefined ? (
-                <p className={`text-2xl ${winrate === 0 ? "text-gray-600 font-bold" : winrate > 0 ? "text-green-600 font-bold" : "text-red-600 font-bold"}`}>
+                <p className={`${winrate === 0 ? "text-gray-600 font-bold" : winrate > 0 ? "text-green-600 font-bold" : "text-red-600 font-bold"}`}>
                     {winrate}%
                 </p>
             ) : (

@@ -14,7 +14,7 @@ import ImportCSV from "./components/ImportCSV";
 import Winrate from "./components/Winrate";
 
 
-const Home = () => {
+const Home_old = () => {
     
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [error, setError] = useState("");
@@ -165,4 +165,4 @@ const Home = () => {
 };
 
 
-export default Home;
+export default Home_old;

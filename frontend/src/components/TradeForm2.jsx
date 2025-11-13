@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function TradeForm({ onAdd }) {
+export default function TradeForm2({ onAdd }) {
   const [form, setForm] = useState({
     symbol: "",
     side: "buy",
@@ -24,7 +24,7 @@ export default function TradeForm({ onAdd }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className=" flex flex-col gap-3 w-full">
+    <form onSubmit={handleSubmit} className="space-y-2 flex flex-wrap gap-2 mb-4">
       <input name="symbol" value={form.symbol} onChange={handleChange} placeholder="Symbol" className="border p-2 rounded" />
       <select name="side" value={form.side} onChange={handleChange} className="border p-2 rounded"style={{ backgroundColor: '#242424' }}>
         <option value="buy" className="border p-2 rounded" >Buy</option>
@@ -34,7 +34,7 @@ export default function TradeForm({ onAdd }) {
       <input name="exit_price" value={form.exit_price} onChange={handleChange} placeholder="Exit" className="border p-2 rounded"/>
       <input name="quantity" value={form.quantity} onChange={handleChange} placeholder="Quantity" className="border p-2 rounded"/>
       <input name="fees" value={form.fees} onChange={handleChange} placeholder="Fees" className="border p-2 rounded"/>
-      <button type="submit" className="border p-2 text-green-600 bg-black/70 hover:border-green-300 transition rounded text-3xl">Add Trade</button>
+      <button type="submit">Add Trade</button>
     </form>
   );
 }

@@ -61,7 +61,7 @@ function AuthPage() {
 
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen gap-4">
+    <div className="flex flex-col items-center justify-center h-screen gap-4 font-jersey15 text-green-dark mx-auto">
       <h1 className="text-2xl font-bold">Trade Journal Login</h1>
       <input
         type="email"
@@ -75,20 +75,24 @@ function AuthPage() {
         className="border p-2 rounded"
         onChange={(e) => setPassword(e.target.value)}
       />
+      <div className="flex-col">
       <div className="flex gap-2">
-        <button onClick={handleLogin} className="px-4 py-2 bg-green-600 text-white rounded">
+        <button onClick={handleLogin} className="p-2 px-6 rounded-md border right-6 border-green-600/60 text-green-600 bg-black/70 hover:border-green-300 transition">
           Login
         </button>
-        <button onClick={handleSignup} className="px-4 py-2 bg-blue-600 text-white rounded">
+        <button onClick={handleSignup} className="p-2 px-6 rounded-md border right-6 border-green-600/60 text-green-600 bg-black/70 hover:border-green-300 transition">
           Sign Up
         </button>
       </div>
+      <div className="flex justify-center mt-2">
       <button
         onClick={handleGoogleLogin}
-        className="px-6 py-2 bg-red-600 text-white rounded"
+        className="p-2 px-6 rounded-md border right-6 border-green-600/60 text-green-600 bg-black/70 hover:border-green-300 transition justify-self-center w-full"
       >
         Sign in with Google
       </button>
+      </div>
+      </div>
     </div>
   );
 }

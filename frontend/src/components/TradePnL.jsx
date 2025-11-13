@@ -5,7 +5,7 @@ const TradePnL = ({ userPnl }) => {
             <h2>📊 PnL Summary</h2>
 
             {userPnl !== null && userPnl !== undefined ? (
-                <p className={`text-2xl ${userPnl === 0 ? "text-gray-600 font-bold" : userPnl > 0 ? "text-green-600 font-bold" : "text-red-600 font-bold"}`}>
+                <p className={`${userPnl === 0 ? "text-gray-600 font-bold" : userPnl > 0 ? "text-green-600 font-bold" : "text-red-600 font-bold"}`}>
                     {userPnl}$
                 </p>
             ) : (
