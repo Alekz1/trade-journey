@@ -66,7 +66,7 @@ function AuthPage() {
       <input
         type="email"
         placeholder="Email"
-        className="border p-2 rounded"
+        className="border p-2 rounded "
         onChange={(e) => setEmail(e.target.value)}
       />
       <input

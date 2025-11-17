@@ -106,14 +106,14 @@ const ImportCSV = ({refresh}) => {
 
         
   return (
-    <div className="p-2 border border-gray-300 rounded-lg">
+    <div className="p-2 border rounded-lg">
       <h3 className="text-xl font-semibold mb-4">Import Trades from CSV</h3>
-      <div className="text-sm text-gray-600 flex gap-2">
+      <div className="text-sm text-gray-900 flex gap-2">
       <input
         type="file"
         accept=".csv"
         onChange={handleFileChange}
-        className="w-full align-text-bottom text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
+        className="w-full align-text-bottom text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-900 dark:border-gray-600 dark:placeholder-gray-400"
       ></input>
       <button
         onClick={handleUpload}

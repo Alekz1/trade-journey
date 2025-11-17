@@ -1,22 +1,16 @@
 import React from "react";
 import api from "../services/api";
+import { toZonedTime, formatInTimeZone } from 'date-fns-tz'; // works in most setups
+import { formatDate } from "../services/utils";
 
-const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, error, refresh }) => {
+
+const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, error, refresh, selectedTz }) => {
   const handleInput = (e) => {
     onFilterChange({ [e.target.name]: e.target.value });
   };
 
-  const formatDate = (isoString) => {
-    const date = new Date(isoString);
-    return date.toLocaleString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
+  
+  
   const deleteTrade = async (tradeId) => {
     await api.delete(`/delete/trade/${tradeId}/`)
     refresh();
@@ -103,11 +97,11 @@ const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, e
           <tbody>
             {trades.length > 0 ? (
               trades.map((trade) => (
-                <tr key={trade.id} className="text-center hover:bg-gray-900">
-                  <td className="p-2 border">{formatDate(trade.timestamp)}</td>
+                <tr key={trade.id} className="text-center hover:bg-green-950/70">
+                  <td className="p-2 border">{formatDate(trade.timestamp, selectedTz)}</td>
                   <td className="p-2 border">{trade.symbol}</td>
                   <td
-                    className={`p-2 border font-semibold ${
+                    className={`p-2 border border-green-600 font-semibold ${
                       trade.side.toLowerCase() === "buy"
                         ? "text-green-600"
                         : "text-red-600"
@@ -119,14 +113,14 @@ const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, e
                   <td className="p-2 border">{trade.exit_price}</td>
                   <td className="p-2 border">{trade.quantity}</td>
                   <td
-                    className={`p-2 border ${
+                    className={`p-2 border border-green-600 ${
                       trade.pnl >= 0 ? "text-green-600" : "text-red-600"
                     }`}
                   >
                     {trade.pnl.toFixed(2)}
                   </td>
                   <td className="p-2 border">{trade.fees}</td>
-                  <td><button onClick={()=>deleteTrade(trade.id)}>DEL</button></td>
+                  <td className="border border-green-600"><button className="text-red-500 hover:text-red-400 text-lg" onClick={()=>deleteTrade(trade.id)}>DEL</button></td>
                 </tr>
               ))
             ) : (

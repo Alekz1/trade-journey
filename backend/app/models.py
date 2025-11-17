@@ -41,5 +41,6 @@ class UserTradeSummary(Base):
     total_pnl = Column(DECIMAL(20, 8), default=0)
     winrate = Column(DECIMAL(5, 2), default=0)
     total_trades = Column(Integer, default=0)
+    sellpercent = Column(DECIMAL(5,2), default=0)
 
     user = relationship("User", backref="summary")

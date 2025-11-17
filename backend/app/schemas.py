@@ -40,6 +40,7 @@ class UserTradeSummary(BaseModel):
     total_pnl: float
     winrate: float
     total_trades: int
+    sellpercent: float
 
     class Config:
         orm_mode = True

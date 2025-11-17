@@ -7,7 +7,8 @@ export default function TradeForm({ onAdd }) {
     entry_price: "",
     exit_price: "",
     quantity: "",
-    fees: "",
+    fees: "", // Optional
+    timestamp: "" // Optional
   });
 
   const handleChange = (e) =>
@@ -19,8 +20,17 @@ export default function TradeForm({ onAdd }) {
       alert("Please fill in all required fields.");
       return;
     }
-    onAdd(form);
-    setForm({ symbol: "", side: "buy", entry_price: "", exit_price: "", quantity: "", fees: "" });
+    const cleanedForm = {
+      ...form,
+      entry_price: parseFloat(form.entry_price),
+      exit_price: parseFloat(form.exit_price),
+      quantity: parseFloat(form.quantity),
+      fees: form.fees ? parseFloat(form.fees) : null,
+      timestamp: form.timestamp || null,
+    };
+    onAdd(cleanedForm);
+    console.log("Submitting trade:", form);
+    setForm({ symbol: "", side: "buy", entry_price: "", exit_price: "", quantity: "", fees: "", timestamp: "" });
   };
 
   return (
@@ -33,8 +43,18 @@ export default function TradeForm({ onAdd }) {
       <input name="entry_price" value={form.entry_price} onChange={handleChange} placeholder="Entry" className="border p-2 rounded" />
       <input name="exit_price" value={form.exit_price} onChange={handleChange} placeholder="Exit" className="border p-2 rounded"/>
       <input name="quantity" value={form.quantity} onChange={handleChange} placeholder="Quantity" className="border p-2 rounded"/>
-      <input name="fees" value={form.fees} onChange={handleChange} placeholder="Fees" className="border p-2 rounded"/>
-      <button type="submit" className="border p-2 text-green-600 bg-black/70 hover:border-green-300 transition rounded text-3xl">Add Trade</button>
+      <input name="fees" value={form.fees} onChange={handleChange} placeholder="Fees" className="border border-green-600 p-2 rounded text-gray-500"/>
+      <input
+        name="timestamp"
+        type="datetime-local"
+        value={form.timestamp}
+        onChange={handleChange}
+        placeholder="Timestamp (ISO format, optional)"
+        className="border border-green-600 text-gray-500 p-2 rounded"
+      />
+      <h3 className="text-sm text-gray-400">* Leave timestamp empty to use current time</h3>
+
+      <button type="submit" className="border p-2 text-green-600 bg-black/70  hover:border-green-300 transition rounded text-3xl">Add Trade</button>
     </form>
   );
 }

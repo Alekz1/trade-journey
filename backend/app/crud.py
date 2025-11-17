@@ -101,13 +101,19 @@ def update_user_trade_summary(db: Session, user_id: int):
     # winrate as percentage (float)
     winrate = (wins / total_trades * 100.0) if total_trades else 0.0
 
-    
+    sells = db.query(
+        func.count(models.Trade.id)
+    ).filter(models.Trade.owner_id == user_id, models.Trade.side.ilike("sell")).scalar()
+
+    sellpercent = (sells / total_trades * 100.0) if total_trades else 0.0
+
 
     summary = db.query(models.UserTradeSummary).get(user_id)
     if summary:
         summary.total_pnl = total_pnl
         summary.winrate = winrate
         summary.total_trades = total_trades
+        summary.sellpercent = sellpercent
         
     else:
         summary = models.UserTradeSummary(user_id=user_id, total_pnl=total_pnl)

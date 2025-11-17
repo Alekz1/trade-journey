@@ -11,13 +11,19 @@ import LoginSignupButton from "./components/LoginSignupButton";
 import LogoutButton from "./components/LogoutButton";
 import ImportCSV from "./components/ImportCSV";
 import Winrate from "./components/Winrate";
+import { DualProgressBar } from "./components/Dualprogressbar";
+import { TradeLineChart } from "./components/TradePnlLineChart";
+import { WinrateLineChart } from "./components/WinrateLineChart";
+import { TimezoneSelector } from "./components/TimezoneSelect";
+import { ClockWithTimezone } from "./components/ClockWithTimezone";
 
 // 🧠 Define types for trade and stats
 type Trade = {
   id?: number;
   symbol: string;
   side: string;
-  date: string;
+  timestamp: string;
+  pnl: number;
   price: number;
   quantity: number;
   fees: number | string;
@@ -34,6 +40,7 @@ type Filters = {
 type UserStats = {
   total_pnl: number;
   winrate: number;
+  sellpercent?: number;
 };
 
 const Home: React.FC = () => {
@@ -41,7 +48,9 @@ const Home: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [user, setUser] = useState<User | null>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
-  const [userStats, setUserStats] = useState<UserStats>({ total_pnl: 0, winrate: 0 });
+  const [allTrades, setAllTrades] = useState<Trade[]>([]);
+  const [userStats, setUserStats] = useState<UserStats>({ total_pnl: 0, winrate: 0, sellpercent: 0 });
+  const [selectedTz, setSelectedTz] = useState<string>("Local Timezone");
   const [filters, setFilters] = useState<Filters>({
     symbol: "",
     side: "",
@@ -77,6 +86,15 @@ const Home: React.FC = () => {
       setLoading(false);
     }
   };
+  const fetchTradesUnfiltered = async () => {
+    try {
+      const res = await api.get<Trade[]>("/trades/");
+      setAllTrades(res.data);
+    } catch (err) {
+      console.error("Failed to fetch trades:", err);
+      setError("Failed to fetch trades");
+    }
+  };
 
   const fetchUserStats = async () => {
     try {
@@ -96,17 +114,35 @@ const Home: React.FC = () => {
     }
   };
 
+  const fullrefresh = async () => {
+    await fetchTrades();
+    await fetchTradesUnfiltered();
+    await refreshUserStats();
+  }
+
   const refreshTradeList = async () => {
     fetchTrades();
     refreshUserStats();
   };
+  
+  const handleTimezoneChange = (tz: string) => {
+    setSelectedTz(tz);
+    localStorage.setItem('preferredTimezone', tz);
+    console.log(localStorage.getItem('preferredTimezone'));
+  }
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+    const storedTz = localStorage.getItem('preferredTimezone');
+    console.log("Stored timezone:", storedTz);
+    if(storedTz){
+      setSelectedTz(storedTz);
+    }else setSelectedTz('Local Timezone');
     setIsLoggedIn(!!token);
     if (!token) return;
     fetchTrades();
     fetchUserStats();
+    fetchTradesUnfiltered();
     getUserData();
   }, []);
 
@@ -137,6 +173,7 @@ const Home: React.FC = () => {
 
   const handleTradeAdded = () => {
     fetchTrades();
+    fetchTradesUnfiltered();
     refreshUserStats();
   };
 
@@ -153,6 +190,8 @@ const Home: React.FC = () => {
       <div className="flex justify-between border-b fixed w-full"/*Header*/>
         <h1 className="px-4 p-2 text-green-dark">TradeJourney</h1>
         <div className="m-4 flex gap-2">
+          <ClockWithTimezone timezone={selectedTz} />
+          <TimezoneSelector selectedTz={selectedTz} onChange={handleTimezoneChange} />          
           {!isLoggedIn && <LoginSignupButton />}
           {isLoggedIn && <LogoutButton />}
         </div>
@@ -160,21 +199,38 @@ const Home: React.FC = () => {
       </div>
       <div className="flex fixed top-18.5"/*Sidebar + Main content*/>
         <div className="w-1/20 h-screen border-r">
-          <img src={user?.photoURL ?? ""} className="p-2 pt-5"></img>
+          <img src={user?.photoURL ?? undefined} className="p-4 mt-5"></img>
         </div>    
       {isLoggedIn && (
         <div className="p-8 overflow-y-auto h-screen w-screen pb-30" /*Main content area*/>
-          <div>
+          <div className="flex justify-between">
             <h2 className="text-4xl px-5 text-green-dark">Welcome, {user?.displayName}!</h2>
+            <h2 className="text-4xl px-5 text-green-dark">Your Trades</h2>
           </div>
           <div className="flex w-full justify-between px-5 pt-5">
             <div className="flex flex-col w-full gap-2 pr-10">
               <div className="flex place-items-stretch gap-3 text-2xl h-full"/*PnL and Winrate display + Refresh button*/>
                 <div className="border w-1/2">
                   <TradePnL userPnl={userStats.total_pnl}/>
+                  <div className="w-full z-100 px-5 pl-7">
+                    <TradeLineChart trades={allTrades} />
+                  </div>
                 </div>
                 <div className="border w-1/2">
                   <Winrate winrate={userStats.winrate} />
+                  <div className="w-full z-100 px-5 pl-7">
+                    <WinrateLineChart trades={allTrades} />
+                  </div>
+                </div>
+              </div>
+              <div className="border w-full flex justify-start items-center text-2xl mt-3 h-32">
+                <p className="text-green-dark px-5">Total Trades: {trades.length}</p>
+                <div className="w-full pt-2.5 px-5 flex flex-col">
+                  <DualProgressBar rightPercent={userStats.sellpercent ?? 0} leftColor="bg-green-500" rightColor="bg-red-600" />
+                  <div className="flex justify-between w-full">
+                    <p className="text-green-dark px-2 pt-1">Buy %: {(100 - (userStats.sellpercent ?? 0)).toFixed(2)}%</p>
+                    <p className="text-red-600 px-2 pt-1">Sell %: {userStats.sellpercent?.toFixed(2)}%</p>
+                  </div>
                 </div>
               </div>
               <button className="flex border justify-center items-center text-3xl mt-3  text-green-600 bg-black/70 hover:border-green-300 transition rounded h-16" onClick={refreshUserStats}>
@@ -196,9 +252,10 @@ const Home: React.FC = () => {
               loading={loading}
               error={error}
               refresh={refreshTradeList}
+              selectedTz={selectedTz}
             />
             <div className="pt-5">
-              <ImportCSV refresh={refreshTradeList} />
+              <ImportCSV refresh={fullrefresh} />
             </div>
           </div>
         </div>
