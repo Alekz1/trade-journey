@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from 'react-i18next';
 
 export default function TradeForm({ onAdd }) {
   const [form, setForm] = useState({
@@ -11,13 +12,15 @@ export default function TradeForm({ onAdd }) {
     timestamp: "" // Optional
   });
 
+  const {t} = useTranslation();
+
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.symbol || !form.entry_price || !form.exit_price || !form.quantity) {
-      alert("Please fill in all required fields.");
+      alert(t('fillrequiredfields')); 
       return;
     }
     const cleanedForm = {
@@ -35,26 +38,26 @@ export default function TradeForm({ onAdd }) {
 
   return (
     <form onSubmit={handleSubmit} className=" flex flex-col gap-3 w-full">
-      <input name="symbol" value={form.symbol} onChange={handleChange} placeholder="Symbol" className="border p-2 rounded" />
+      <input name="symbol" value={form.symbol} onChange={handleChange} placeholder={t("symbol")} className="border p-2 rounded" />
       <select name="side" value={form.side} onChange={handleChange} className="border p-2 rounded"style={{ backgroundColor: '#242424' }}>
-        <option value="buy" className="border p-2 rounded" >Buy</option>
-        <option value="sell" className="border p-2 rounded">Sell</option>
+        <option value="buy" className="border p-2 rounded" >{t('buy')}</option>
+        <option value="sell" className="border p-2 rounded">{t("sell")}</option>
       </select>
-      <input name="entry_price" value={form.entry_price} onChange={handleChange} placeholder="Entry" className="border p-2 rounded" />
-      <input name="exit_price" value={form.exit_price} onChange={handleChange} placeholder="Exit" className="border p-2 rounded"/>
-      <input name="quantity" value={form.quantity} onChange={handleChange} placeholder="Quantity" className="border p-2 rounded"/>
-      <input name="fees" value={form.fees} onChange={handleChange} placeholder="Fees" className="border border-green-600 p-2 rounded text-gray-500"/>
+      <input name="entry_price" value={form.entry_price} onChange={handleChange} placeholder={t("entry")} className="border p-2 rounded" />
+      <input name="exit_price" value={form.exit_price} onChange={handleChange} placeholder={t("exit")} className="border p-2 rounded"/>
+      <input name="quantity" value={form.quantity} onChange={handleChange} placeholder={t("quantity")} className="border p-2 rounded"/>
+      <input name="fees" value={form.fees} onChange={handleChange} placeholder={t("fees")} className="border border-green-600 p-2 rounded text-gray-500"/>
       <input
         name="timestamp"
         type="datetime-local"
         value={form.timestamp}
         onChange={handleChange}
-        placeholder="Timestamp (ISO format, optional)"
+        placeholder={t("timestamp")}
         className="border border-green-600 text-gray-500 p-2 rounded"
       />
-      <h3 className="text-sm text-gray-400">* Leave timestamp empty to use current time</h3>
+      <h3 className="text-sm text-gray-400">{t('timestamphint')}</h3>
 
-      <button type="submit" className="border p-2 text-green-600 bg-black/70  hover:border-green-300 transition rounded text-3xl">Add Trade</button>
+      <button type="submit" className="border p-2 text-green-600 bg-black/70  hover:border-green-300 transition rounded text-3xl">{t("addtrade")}</button>
     </form>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
 import api from "./services/api";
@@ -16,6 +16,8 @@ import { TradeLineChart } from "./components/TradePnlLineChart";
 import { WinrateLineChart } from "./components/WinrateLineChart";
 import { TimezoneSelector } from "./components/TimezoneSelect";
 import { ClockWithTimezone } from "./components/ClockWithTimezone";
+import { LanguageSelector } from "./components/LanguageSelector";
+import { useTranslation } from "react-i18next";
 
 // 🧠 Define types for trade and stats
 type Trade = {
@@ -59,6 +61,8 @@ const Home: React.FC = () => {
     limit: 10,
   });
   const [loading, setLoading] = useState<boolean>(false);
+
+  const {t} = useTranslation();
 
   const navigate = useNavigate();
 
@@ -164,9 +168,9 @@ const Home: React.FC = () => {
       handleTradeAdded();
     } catch (err: any) {
       if (err.response && err.response.status === 401) {
-        setError("❌ Unauthorized: Please log in to add trades.");
+        setError(t("unauthorized"));
       } else {
-        setError("❌ Failed to add trade.");
+        setError(t("addtradeerror"));
       }
     }
   };
@@ -191,7 +195,8 @@ const Home: React.FC = () => {
         <h1 className="px-4 p-2 text-green-dark">TradeJourney</h1>
         <div className="m-4 flex gap-2">
           <ClockWithTimezone timezone={selectedTz} />
-          <TimezoneSelector selectedTz={selectedTz} onChange={handleTimezoneChange} />          
+          <TimezoneSelector selectedTz={selectedTz} onChange={handleTimezoneChange} />
+          <LanguageSelector /> 
           {!isLoggedIn && <LoginSignupButton />}
           {isLoggedIn && <LogoutButton />}
         </div>
@@ -204,8 +209,8 @@ const Home: React.FC = () => {
       {isLoggedIn && (
         <div className="p-8 overflow-y-auto h-screen w-screen pb-30" /*Main content area*/>
           <div className="flex justify-between">
-            <h2 className="text-4xl px-5 text-green-dark">Welcome, {user?.displayName}!</h2>
-            <h2 className="text-4xl px-5 text-green-dark">Your Trades</h2>
+            <h2 className="text-4xl px-5 text-green-dark">{t('welcome')}, {user?.displayName}!</h2>
+            <h2 className="text-4xl px-5 text-green-dark">{t("yourtrades")}</h2>
           </div>
           <div className="flex w-full justify-between px-5 pt-5">
             <div className="flex flex-col w-full gap-2 pr-10">
@@ -224,21 +229,21 @@ const Home: React.FC = () => {
                 </div>
               </div>
               <div className="border w-full flex justify-start items-center text-2xl mt-3 h-32">
-                <p className="text-green-dark px-5">Total Trades: {trades.length}</p>
+                <p className="text-green-dark px-5">{t('totaltrades')}: {trades.length}</p>
                 <div className="w-full pt-2.5 px-5 flex flex-col">
                   <DualProgressBar rightPercent={userStats.sellpercent ?? 0} leftColor="bg-green-500" rightColor="bg-red-600" />
                   <div className="flex justify-between w-full">
-                    <p className="text-green-dark px-2 pt-1">Buy %: {(100 - (userStats.sellpercent ?? 0)).toFixed(2)}%</p>
-                    <p className="text-red-600 px-2 pt-1">Sell %: {userStats.sellpercent?.toFixed(2)}%</p>
+                    <p className="text-green-dark px-2 pt-1">{t('buy')} %: {(100 - (userStats.sellpercent ?? 0)).toFixed(2)}%</p>
+                    <p className="text-red-600 px-2 pt-1">{t('sell')} %: {userStats.sellpercent?.toFixed(2)}%</p>
                   </div>
                 </div>
               </div>
               <button className="flex border justify-center items-center text-3xl mt-3  text-green-600 bg-black/70 hover:border-green-300 transition rounded h-16" onClick={refreshUserStats}>
-                  Refresh PNL
+                  {t('refreshstats')}
               </button>
             </div>
             <div className="flex flex-col w-100 items-center mx-7"/*New Trade Form*/>
-              <p className="text-green-dark text-4xl">Quick Add</p>
+              <p className="text-green-dark text-4xl">{t('quickadd')}</p>
               <TradeForm onAdd={addTrade} />
             </div>
           </div> 
@@ -251,7 +256,7 @@ const Home: React.FC = () => {
               onApplyFilters={handleApplyFilters}
               loading={loading}
               error={error}
-              refresh={refreshTradeList}
+              refresh={fullrefresh}
               selectedTz={selectedTz}
             />
             <div className="pt-5">

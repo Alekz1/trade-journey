@@ -7,10 +7,13 @@ import {
   signInWithEmailAndPassword,
 } from "./services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { useTranslation } from "react-i18next";
 
 function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const {t} = useTranslation();
 
   // Google login
   const handleGoogleLogin = async () => {
@@ -62,26 +65,26 @@ function AuthPage() {
 
   return (
     <div className="flex flex-col items-center justify-center h-screen gap-4 font-jersey15 text-green-dark mx-auto">
-      <h1 className="text-2xl font-bold">Trade Journal Login</h1>
+      <h1 className="text-2xl font-workbech">TradeJourney</h1>
       <input
         type="email"
-        placeholder="Email"
+        placeholder={t('email')}
         className="border p-2 rounded "
         onChange={(e) => setEmail(e.target.value)}
       />
       <input
         type="password"
-        placeholder="Password"
+        placeholder={t('password')}
         className="border p-2 rounded"
         onChange={(e) => setPassword(e.target.value)}
       />
       <div className="flex-col">
       <div className="flex gap-2">
         <button onClick={handleLogin} className="p-2 px-6 rounded-md border right-6 border-green-600/60 text-green-600 bg-black/70 hover:border-green-300 transition">
-          Login
+          {t('login')}
         </button>
         <button onClick={handleSignup} className="p-2 px-6 rounded-md border right-6 border-green-600/60 text-green-600 bg-black/70 hover:border-green-300 transition">
-          Sign Up
+          {t('signup')}
         </button>
       </div>
       <div className="flex justify-center mt-2">
@@ -89,7 +92,7 @@ function AuthPage() {
         onClick={handleGoogleLogin}
         className="p-2 px-6 rounded-md border right-6 border-green-600/60 text-green-600 bg-black/70 hover:border-green-300 transition justify-self-center w-full"
       >
-        Sign in with Google
+        {t('google_login')}
       </button>
       </div>
       </div>

@@ -2,6 +2,7 @@ import React from "react";
 import api from "../services/api";
 import { toZonedTime, formatInTimeZone } from 'date-fns-tz'; // works in most setups
 import { formatDate } from "../services/utils";
+import { useTranslation } from 'react-i18next';
 
 
 const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, error, refresh, selectedTz }) => {
@@ -9,37 +10,37 @@ const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, e
     onFilterChange({ [e.target.name]: e.target.value });
   };
 
-  
-  
   const deleteTrade = async (tradeId) => {
     await api.delete(`/delete/trade/${tradeId}/`)
     refresh();
   }
+  
+  const {t} = useTranslation();
 
   return (
     <div className="mt-6">
-      <h2 className="text-xl font-bold mb-3">Your Trades</h2>
+      <h2 className="text-xl font-bold mb-3">{t('yourtrades')}</h2>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2 mb-4">
         <input
           name="symbol"
-          placeholder="Symbol..."
+          placeholder={t("symbol")}
           value={filters.symbol}
           onChange={handleInput}
           className="border p-2 rounded"
         />
         <select
-          name="side"
+          name={t("side")}
           value={filters.side}
           onChange={handleInput}
           className="border p-2 rounded"
           style={{ backgroundColor: '#242424' }}
         >
-          <option value="">All sides</option>
-          <option value="buy">Buy</option>
-          <option value="sell">Sell</option>
-        </select>
+          <option value="">{t('allsides')}</option>
+          <option value="buy">{t("buy")}</option>
+          <option value="sell">{t('sell')}</option>
+        </select> 
         <input
           name="date_from"
           type="date"
@@ -61,37 +62,37 @@ const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, e
           className="border p-2 rounded"
           style={{ backgroundColor: '#242424' }}
         >
-          <option value={5}>Last 5</option>
-          <option value={10}>Last 10</option>
-          <option value={25}>Last 25</option>
-          <option value={50}>Last 50</option>
-          <option value={100}>Last 100</option>
+          <option value={5}>{t("last")} 5</option>
+          <option value={10}>{t("last")} 10</option>
+          <option value={25}>{t("last")} 25</option>
+          <option value={50}>{t("last")} 50</option>
+          <option value={100}>{t("last")} 100</option>
         </select>
         <button
           onClick={onApplyFilters}
           className="bg-blue-600 text-white px-4 py-2 rounded"
         >
-          Apply
+          {t("applyfilters")}
         </button>
       </div>
 
       {loading ? (
-        <p>Loading...</p>
+        <p>{t("loading")}</p>
       ) : error ? (
         <p className="text-red-600">{error}</p>
       ) : (
         <table className="min-w-full border border-gray-300 rounded-lg">
           <thead className="bg-green-950">
             <tr>
-              <th className="p-2 border">Date</th>
-              <th className="p-2 border">Symbol</th>
-              <th className="p-2 border">Side</th>
-              <th className="p-2 border">Entry</th>
-              <th className="p-2 border">Exit</th>
-              <th className="p-2 border">Qty</th>
-              <th className="p-2 border">PnL</th>
-              <th className="p-2 border">Fees</th>
-              <th className="p-2 border">Delete</th>
+              <th className="p-2 border">{t("date")}</th>
+              <th className="p-2 border">{t("symbol")}</th>
+              <th className="p-2 border">{t("side")}</th>
+              <th className="p-2 border">{t("entry")}</th>
+              <th className="p-2 border">{t("exit")}</th>
+              <th className="p-2 border">{t("quantity")}</th>
+              <th className="p-2 border">{t("pnl")}</th>
+              <th className="p-2 border">{t("fees")}</th>
+              <th className="p-2 border">{t("delete")}</th>
             </tr>
           </thead>
           <tbody>
@@ -126,7 +127,7 @@ const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, e
             ) : (
               <tr>
                 <td colSpan="8" className="text-center p-3 text-gray-500">
-                  No trades found.
+                  {t("notradesfound")}
                 </td>
               </tr>
             )}

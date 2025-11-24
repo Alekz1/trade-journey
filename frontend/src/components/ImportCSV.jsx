@@ -3,8 +3,12 @@ import React, { useState } from 'react';
 import Papa from 'papaparse';
 import axios from 'axios';
 import api from '../services/api';
+import { useTranslation } from 'react-i18next';
 
 const ImportCSV = ({refresh}) => {
+  
+  const {t} = useTranslation();
+
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState('');
 
@@ -107,7 +111,7 @@ const ImportCSV = ({refresh}) => {
         
   return (
     <div className="p-2 border rounded-lg">
-      <h3 className="text-xl font-semibold mb-4">Import Trades from CSV</h3>
+      <h3 className="text-xl font-semibold mb-4">{t("importcsv")}</h3>
       <div className="text-sm text-gray-900 flex gap-2">
       <input
         type="file"
@@ -120,7 +124,7 @@ const ImportCSV = ({refresh}) => {
         disabled={!file}
         className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
       >
-        Upload
+        {t("upload")}
       </button>
       {status && <p className="text-red-500 mt-4">{status}</p>}
     </div>
