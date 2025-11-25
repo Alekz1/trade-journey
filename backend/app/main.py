@@ -36,20 +36,25 @@ def get_db():
     finally:
         db.close()
 
+# -----------------------------
+# User Endpoints
+# -----------------------------
 @app.post("/users/", response_model=schemas.User)
 def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return crud.create_user(db=db, user=user)
 
-# Add a new trade
+# -----------------------------
+# Trade Endpoints
+# -----------------------------
 @app.post("/trades/", response_model=schemas.Trade)
 def add_trade(
     trade: schemas.TradeCreate,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),  # get logged-in user
 ):
-    return crud.create_trade(db=db, trade=trade, user_id=user.uid)  # use current user's UID
+    # Create trade + closures
+    return crud.create_trade(db=db, trade=trade, user_id=user.uid)
 
-# List trades for current user (with filtering)
 @app.get("/trades/", response_model=list[schemas.Trade])
 def list_trades(
     db: Session = Depends(get_db),
@@ -69,18 +74,7 @@ def list_trades(
         date_to=date_to,
         limit=limit
     )
-@app.get("/users/me/stats/", response_model=schemas.UserTradeSummary)
-def get_user_pnl(
-    db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user),
-):
-    return crud.get_user_trade_summary(db=db, user_id=user.uid)
-@app.get("/users/me/stats/refresh/", response_model=schemas.UserTradeSummary)
-def get_user_pnl(
-    db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user),
-):
-    return crud.update_user_trade_summary(db=db, user_id=user.uid)
+
 @app.delete("/delete/trade/{trade_id}/")
 def delete_trade(
     trade_id: int,
@@ -91,3 +85,20 @@ def delete_trade(
     if not success:
         raise HTTPException(status_code=404, detail="Trade not found")
     return {"detail": success}
+
+# -----------------------------
+# Stats Endpoints
+# -----------------------------
+@app.get("/users/me/stats/", response_model=schemas.UserTradeSummary)
+def get_user_pnl(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    return crud.get_user_trade_summary(db=db, user_id=user.uid)
+
+@app.get("/users/me/stats/refresh/", response_model=schemas.UserTradeSummary)
+def refresh_user_pnl(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    return crud.update_user_trade_summary(db=db, user_id=user.uid)

@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import Home from "./Home.tsx";
 import Home_old from "./Home_old";
 import LandingPage from "./LandingPage";
+import Trades from "./Trades.tsx";
 
 function App() {
   return (
@@ -18,8 +19,8 @@ function App() {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/home" element={<Home />} />
         <Route path="/old" element={<Home_old />} />
-        {/* fallback for unknown routes */}
-        <Route path="*" element={<Home />} />
+        <Route path="/trades" element={<Trades/>}/>       
+        <Route path="*" element={<Home />} /> {/* fallback for unknown routes */}
       </Routes>
     </Router>
   );

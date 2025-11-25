@@ -42,5 +42,12 @@
     "winrate": "Winrate %",
     "pnlsum": "PnL Summary",
     "importcsv": "Import Trades from CSV",
-    "upload": "Upload"
+    "upload": "Upload",
+    "singleCloseMode": "Partial Close",
+    "partialCloses": "Partial closes",
+    "addPartialClose": "Add partial close",
+    "closedQuantity": "Closed quantity",
+    "closedQuantityExceeds": "Closed quantity exceeds total trade quantity.",
+    "closedQuantityLess": "Closed quantity is less than total trade quantity.",
+    "closedQuantityMatch": "Closed quantity matches the total trade quantity."
 }

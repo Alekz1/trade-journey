@@ -1,8 +1,9 @@
 import React, { useState, useEffect, use } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, redirect, To } from "react-router-dom";
 import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
 import api from "./services/api";
 import { auth } from "./services/firebase";
+import { Icon } from "@iconify/react"
 
 import TradeForm from "./components/TradeForm";
 import TradeList from "./components/TradeList";
@@ -26,7 +27,8 @@ type Trade = {
   side: string;
   timestamp: string;
   pnl: number;
-  price: number;
+  entry_price: number;
+  exit_price: number;
   quantity: number;
   fees: number | string;
 };
@@ -189,6 +191,10 @@ const Home: React.FC = () => {
     fetchTrades(filters);
   };
 
+  const redirectToTrades = (rurl: To) => {
+    navigate(rurl)
+  }
+
   return (
     <div className="font-jersey15 text-green-600 mx-auto">
       <div className="flex justify-between border-b fixed w-full"/*Header*/>
@@ -203,8 +209,16 @@ const Home: React.FC = () => {
         {error && <p className="text-red-600 mb-4">{error}</p>}
       </div>
       <div className="flex fixed top-18.5"/*Sidebar + Main content*/>
-        <div className="w-1/20 h-screen border-r">
-          <img src={user?.photoURL ?? undefined} className="p-4 mt-5"></img>
+        <div className="w-1/20 h-screen border-r flex-col">
+          <img src={user?.photoURL ?? undefined} className="p-2.5 mt-2.5 mb-7.5 border-b"></img>
+          <div className="flex-col gap-5 text-center">
+            <button className="" onClick={()=>redirectToTrades("/home")}>
+              <Icon icon="pixelarticons:home" width={45} height={45}/>
+            </button>
+            <button className="my-5" onClick={()=>redirectToTrades("/trades")}>
+              <Icon icon="pixelarticons:chart-add" width={45} height={45}/>
+            </button>
+          </div>
         </div>    
       {isLoggedIn && (
         <div className="p-8 overflow-y-auto h-screen w-screen pb-30" /*Main content area*/>
