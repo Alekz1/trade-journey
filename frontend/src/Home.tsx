@@ -191,7 +191,7 @@ const Home: React.FC = () => {
     fetchTrades(filters);
   };
 
-  const redirectToTrades = (rurl: To) => {
+  const handleRedirect = (rurl: To) => {
     navigate(rurl)
   }
 
@@ -206,16 +206,15 @@ const Home: React.FC = () => {
           {!isLoggedIn && <LoginSignupButton />}
           {isLoggedIn && <LogoutButton />}
         </div>
-        {error && <p className="text-red-600 mb-4">{error}</p>}
       </div>
       <div className="flex fixed top-18.5"/*Sidebar + Main content*/>
         <div className="w-1/20 h-screen border-r flex-col">
           <img src={user?.photoURL ?? undefined} className="p-2.5 mt-2.5 mb-7.5 border-b"></img>
           <div className="flex-col gap-5 text-center">
-            <button className="" onClick={()=>redirectToTrades("/home")}>
+            <button className="" onClick={()=>handleRedirect("/home")}>
               <Icon icon="pixelarticons:home" width={45} height={45}/>
             </button>
-            <button className="my-5" onClick={()=>redirectToTrades("/trades")}>
+            <button className="my-5" onClick={()=>handleRedirect("/trades")}>
               <Icon icon="pixelarticons:chart-add" width={45} height={45}/>
             </button>
           </div>

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { To, useNavigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
 import api from "./services/api";
+import {Icon} from "@iconify/react"
 
 import TradeList from "./components/TradeList";
 import LoginSignupButton from "./components/LoginSignupButton";
@@ -26,6 +27,7 @@ type Trade = {
     fees: number | null;
     timestamp: string | null;
   }[];
+  file: File | null
 };
 
 type Filters = {
@@ -71,6 +73,11 @@ const Trades: React.FC = () => {
     signOut(auth).catch((err) => console.error("Firebase logout error:", err));
     localStorage.removeItem("token");
   };
+
+  const handleRedirect = (rurl: To) => {
+    navigate(rurl)
+  }
+
 
   const fetchTrades = async (activeFilters: Filters = filters) => {
     try {
@@ -159,28 +166,32 @@ const Trades: React.FC = () => {
   };
 
   const addTrade = async (trade: Trade) => {
-    // Ensure partial closes are cleaned
-    trade.partial_closes = trade.partial_closes.map((pc) => ({
-      exit_price: pc.exit_price,
-      closed_quantity: pc.closed_quantity,
-      fees: pc.fees ?? 0,
-      timestamp: pc.timestamp,
-    }));
+  try {
+    const fd = new FormData();
+    fd.append("symbol", trade.symbol);
+    fd.append("side", trade.side);
+    fd.append("entry_price", String(trade.entry_price));
+    fd.append("quantity", String(trade.quantity));
+    fd.append("partial_closes", JSON.stringify(trade.partial_closes));
 
-    try {
-      console.log("Posting trade:", trade);
-      const res = await api.post<Trade>("/trades/", trade);
-      setTrades((prev) => [...prev, res.data]);
-      handleTradeAdded();
-    } catch (err: any) {
-      if (err.response && err.response.status === 401) {
-        setError(t("unauthorized"));
-      } else {
-        setError(t("addtradeerror"));
-        console.error("Error:", err.response?.data || err);
-      }
+    if (trade.file) {
+      fd.append("file", trade.file);
     }
-  };
+
+    const res = await api.post<Trade>("/trades/", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    setTrades((prev) => [...prev, res.data]);
+    handleTradeAdded();
+  } catch (err: any) {
+    if (err.response && err.response.status === 401) {
+      setError(t("unauthorized"));
+    } else {
+      setError(t("addtradeerror"));
+      console.error("Error:", err.response?.data || err);
+    }
+  }
+};
 
   const handleTradeAdded = () => {
     fetchTrades();
@@ -207,20 +218,28 @@ const Trades: React.FC = () => {
           {!isLoggedIn && <LoginSignupButton />}
           {isLoggedIn && <LogoutButton />}
         </div>
-        {error && <p className="text-red-600 mb-4">{error}</p>}
       </div>
       <div className="flex fixed top-18.5">
-        <div className="w-1/20 h-screen border-r">
-          <img src={user?.photoURL ?? undefined} className="p-4 mt-5" />
-        </div>
+        <div className="w-1/20 h-screen border-r flex-col">
+          <img src={user?.photoURL ?? undefined} className="p-2.5 mt-2.5 mb-7.5 border-b"></img>
+          <div className="flex-col gap-5 text-center">
+            <button className="" onClick={()=>handleRedirect("/home")}>
+              <Icon icon="pixelarticons:home" width={45} height={45}/>
+            </button>
+            <button className="my-5" onClick={()=>handleRedirect("/trades")}>
+              <Icon icon="pixelarticons:chart-add" width={45} height={45}/>
+            </button>
+          </div>
+        </div>  
         {isLoggedIn && (
           <div className="p-8 overflow-y-auto h-screen w-screen pb-30">
             <div className="flex justify-between">
-              <h2 className="text-4xl px-5 text-green-dark">
-                {t("welcome")}, {user?.displayName}!
+              <h2 className="text-4xl px-1 mb-2.5 text-green-dark">
+                {t("addtrade")}
               </h2>
             </div>
             <TradeForm2 onAdd={addTrade} />
+            {error && <p className="text-red-600 my-4">{error}</p>}
             <div className="flex flex-col gap-5">
               <TradeList
                 trades={trades}

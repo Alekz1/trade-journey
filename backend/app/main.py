@@ -1,20 +1,29 @@
 from datetime import datetime
+import json
 from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import UploadFile, File, Form, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from .auth import router
-from typing import Optional
-
+from typing import List, Optional
 from .dependencies import get_current_user
 from . import models, schemas, crud
 from .database import engine, SessionLocal
 from passlib.hash import bcrypt
+import oci, uuid
 
-print(bcrypt.hash("admin"))
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Trade Journal API")
 app.include_router(router)
+
+# OCI config (use ~/.oci/config or environment variables)
+config = oci.config.from_file("./.oci/config", "DEFAULT")
+object_storage = oci.object_storage.ObjectStorageClient(config)
+
+# Replace with your tenancy details
+NAMESPACE = object_storage.get_namespace().data
+BUCKET_NAME = "trade-journey"
 
 # Allow React frontend to access FastAPI
 origins = [
@@ -47,13 +56,44 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 # Trade Endpoints
 # -----------------------------
 @app.post("/trades/", response_model=schemas.Trade)
-def add_trade(
-    trade: schemas.TradeCreate,
+async def add_trade_with_image(
+    symbol: str = Form(...),
+    side: str = Form(...),
+    entry_price: float = Form(...),
+    quantity: float = Form(...),
+    timestamp: str = Form(None),
+    partial_closes: str = Form("[]"),   # comes in as JSON string
+    file: UploadFile = File(None),
     db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user),  # get logged-in user
+    user: models.User = Depends(get_current_user)
 ):
-    # Create trade + closures
-    return crud.create_trade(db=db, trade=trade, user_id=user.uid)
+    try:
+        image_url = None
+        if file:
+            filename = f"{uuid.uuid4()}_{file.filename}"
+            object_storage.put_object(NAMESPACE, BUCKET_NAME, filename, file.file)
+            image_url = (
+                f"https://objectstorage.{config['region']}.oraclecloud.com"
+                f"/n/{NAMESPACE}/b/{BUCKET_NAME}/o/{filename}"
+            )
+
+        closes: List[schemas.PartialClose] = []
+        if partial_closes:
+            closes = [schemas.PartialClose(**pc) for pc in json.loads(partial_closes)]
+
+        trade_data = schemas.TradeCreate(
+            symbol=symbol,
+            side=side,
+            entry_price=entry_price,
+            quantity=quantity,
+            timestamp=timestamp,
+            partial_closes=closes,
+            image_url=image_url
+        )
+        return crud.create_trade(db=db, trade=trade_data, user_id=user.uid)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/trades/", response_model=list[schemas.Trade])
 def list_trades(

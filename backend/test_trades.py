@@ -1,3 +1,5 @@
+import io
+from fastapi.testclient import TestClient
 import pytest
 from decimal import Decimal
 from datetime import datetime, UTC
@@ -7,6 +9,7 @@ from sqlalchemy.orm import sessionmaker
 # Import from your app package
 from app import models, crud, schemas
 from app.database import Base
+from app.main import app
 
 # -----------------------------
 # Test DB Setup
@@ -179,3 +182,35 @@ def test_invalid_closure_quantity(db):
     )
     with pytest.raises(ValueError):
         crud.create_trade(db, trade_data, user_id=user.uid)
+
+client = TestClient(app)
+
+def test_upload_trade_image():
+    # 1. Create trade via API
+    response = client.post(
+        "/trades",
+        json={
+            "symbol": "AAPL",
+            "side": "buy",
+            "entry_price": 150.0,
+            "quantity": 10,
+            "timestamp": datetime.now(UTC).isoformat(),
+            "partial_closes": []
+        }
+    )
+    assert response.status_code == 200
+    trade_id = response.json()["id"]
+
+    # 2. Upload image
+    file_content = b"fake image content"
+    upload_response = client.post(
+        f"/trades/{trade_id}/upload-image",
+        files={"file": ("test.png", io.BytesIO(file_content), "image/png")}
+    )
+
+    # 3. Assert response
+    assert upload_response.status_code == 200
+    data = upload_response.json()
+    assert data["trade_id"] == trade_id
+    assert "image_url" in data
+

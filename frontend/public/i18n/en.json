@@ -49,5 +49,6 @@
     "closedQuantity": "Closed quantity",
     "closedQuantityExceeds": "Closed quantity exceeds total trade quantity.",
     "closedQuantityLess": "Closed quantity is less than total trade quantity.",
-    "closedQuantityMatch": "Closed quantity matches the total trade quantity."
+    "closedQuantityMatch": "Closed quantity matches the total trade quantity.",
+    "addtradeerror": "There was an error adding the trade!"
 }

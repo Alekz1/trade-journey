@@ -26,6 +26,7 @@ class TradeBase(BaseModel):
     pnl: Optional[float] = None
     timestamp: Optional[datetime.datetime] = None
     partial_closes: List[PartialClose]
+    image_url: Optional[str]
 
 class TradeCreate(TradeBase):
     """Model used when creating a new trade"""

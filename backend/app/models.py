@@ -34,13 +34,16 @@ class Trade(Base):
 
     pnl = Column(DECIMAL(20, 8))  # aggregated profit/loss across closures
 
-    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    timestamp = Column(DateTime, default=datetime.datetime.now(datetime.UTC))
+
+    image_url = Column(String(512), nullable=True)
 
     owner_id = Column(String(128), ForeignKey("users.uid"))
     owner = relationship("User", back_populates="trades")
 
     # Relationship to closures
     partial_closes = relationship("TradeClosure", back_populates="trade", cascade="all, delete-orphan")
+    
 
 # -----------------------------
 # Trade Closure Model

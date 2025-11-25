@@ -35,6 +35,7 @@ def create_trade(db: Session, trade: schemas.TradeCreate, user_id: str):
         quantity=quantity,
         pnl=Decimal(0),
         timestamp=timestamp,
+        image_url=trade.image_url,
         owner_id=user_id,
     )
     db.add(db_trade)

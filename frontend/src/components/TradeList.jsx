@@ -77,7 +77,7 @@ const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, e
       {loading ? (
         <p>{t("loading")}</p>
       ) : error ? (
-        <p className="text-red-600">{error}</p>
+        <p className="text-red-600"></p>
       ) : (
         <table className="min-w-full border border-gray-300 rounded-lg">
           <thead className="bg-green-950">

@@ -1,6 +1,8 @@
+import { Icon } from "@iconify/react";
 import { parse } from "date-fns";
 import React, { useState, ChangeEvent, FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import FileUpload from "./FileUpload";
 
 interface PartialClose {
   exit_price: string;
@@ -32,6 +34,7 @@ interface CleanedTradeFormData {
     timestamp: string | null;
     pnl: number | null;
   }[];
+  file: File | null
 }
 
 interface TradeForm2Props {
@@ -56,6 +59,7 @@ const TradeForm2: React.FC<TradeForm2Props> = ({ onAdd }) => {
 
   const [useSingleClose, setUseSingleClose] = useState<boolean>(true);
   const [validationMsg, setValidationMsg] = useState<string>("");
+  const [file, setFile] = useState<File | null>(null);
 
   const validateQuantities = (quantity: string, closes: PartialClose[]) => {
     if (useSingleClose) {
@@ -112,9 +116,14 @@ const TradeForm2: React.FC<TradeForm2Props> = ({ onAdd }) => {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
     if (!form.symbol || !form.entry_price || !form.quantity) {
       alert(t("fillrequiredfields"));
       return;
+    }
+
+    if(validationMsg){
+      return
     }
 
     const cleanedForm: CleanedTradeFormData = {
@@ -126,11 +135,12 @@ const TradeForm2: React.FC<TradeForm2Props> = ({ onAdd }) => {
       timestamp: form.timestamp || null,
       partial_closes: partialCloses.map((pc) => ({
         exit_price: parseFloat(pc.exit_price),
-        closed_quantity: parseFloat(pc.closed_quantity) | parseFloat(form.quantity),
+        closed_quantity: parseFloat(pc.closed_quantity) || parseFloat(form.quantity),
         fees: pc.fees ? parseFloat(pc.fees) : null,
         timestamp: pc.timestamp || null,
         pnl: null,
       })),
+      file: file ? file : null
     };
 
     onAdd(cleanedForm);
@@ -264,22 +274,22 @@ const TradeForm2: React.FC<TradeForm2Props> = ({ onAdd }) => {
               <button
                 type="button"
                 onClick={() => removePartialClose(index)}
-                className="text-red-500"
+                className="text-red-500 border p-2 rounded border-green-500"
               >
-                ❌
+                <Icon icon="pixelarticons:close-box"/>
               </button>
             </div>
           ))}
           <button
             type="button"
             onClick={addPartialClose}
-            className="border p-2 text-blue-600 bg-black/50 hover:border-blue-300 transition rounded"
+            className="border p-2 text-green-500 bg-black/50 hover:border-green-300 transition rounded"
           >
             + {t("addPartialClose")}
           </button>
         </>
       )}
-
+      <FileUpload onFileSelect={(selectedFile) => setFile(selectedFile)} />
       {/* Validation message above submit */}
       {validationMsg && (
         <p className={`font-semibold mb-2 ${validationClass}`}>
