@@ -2,10 +2,12 @@ import React from "react";
 import api from "../services/api";
 import { formatDate } from "../services/utils";
 import { useTranslation } from 'react-i18next';
+import ImageModal from "./ImageModal";
 
 const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, error, refresh, selectedTz }) => {
   const handleInput = (e) => {
     onFilterChange({ [e.target.name]: e.target.value });
+    console.log(trades);
   };
 
   const deleteTrade = async (tradeId) => {
@@ -90,6 +92,7 @@ const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, e
               <th className="p-2 border">{t("quantity")}</th>
               <th className="p-2 border">{t("pnl")}</th>
               <th className="p-2 border">{t("fees")}</th>
+              <th className="p-2 border">{t("image")}</th>
               <th className="p-2 border">{t("delete")}</th>
             </tr>
           </thead>
@@ -120,6 +123,13 @@ const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, e
                       {trade.pnl.toFixed(2)}
                     </td>
                     <td className="p-2 border">{pc.fees}</td>
+                    <td className="p-2 border">
+                      {trade.image_url ? (
+                        <ImageModal imageSrc={trade.image_url} />
+                      ) : (
+                        <span className="text-gray-500">—</span>
+                      )}
+                    </td>
                     <td className="border border-green-600">
                       <button
                         className="text-red-500 hover:text-red-400 text-lg"

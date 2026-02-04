@@ -1,8 +1,9 @@
 from datetime import datetime
 import json
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, requests
 from fastapi import UploadFile, File, Form, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from .auth import router
 from typing import List, Optional
@@ -72,10 +73,7 @@ async def add_trade_with_image(
         if file:
             filename = f"{uuid.uuid4()}_{file.filename}"
             object_storage.put_object(NAMESPACE, BUCKET_NAME, filename, file.file)
-            image_url = (
-                f"https://objectstorage.{config['region']}.oraclecloud.com"
-                f"/n/{NAMESPACE}/b/{BUCKET_NAME}/o/{filename}"
-            )
+            image_url = filename
 
         closes: List[schemas.PartialClose] = []
         if partial_closes:
@@ -135,6 +133,28 @@ def get_user_pnl(
     user: models.User = Depends(get_current_user),
 ):
     return crud.get_user_trade_summary(db=db, user_id=user.uid)
+
+@app.get("/fetch-image/{image_name}")
+def fetch_image(image_name: str):
+    """
+    Fetch an image from OCI Object Storage using authenticated SDK call.
+    """
+    try:
+        # Get object from OCI
+        response = object_storage.get_object(
+            namespace_name=NAMESPACE,
+            bucket_name=BUCKET_NAME,
+            object_name=image_name
+        )
+
+        # Stream back to client
+        return StreamingResponse(
+            response.data.raw,
+            media_type=response.headers.get("Content-Type", "image/jpeg")
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/users/me/stats/refresh/", response_model=schemas.UserTradeSummary)
 def refresh_user_pnl(

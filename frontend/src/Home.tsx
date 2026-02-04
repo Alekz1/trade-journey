@@ -223,7 +223,6 @@ const Home: React.FC = () => {
         <div className="p-8 overflow-y-auto h-screen w-screen pb-30" /*Main content area*/>
           <div className="flex justify-between">
             <h2 className="text-4xl px-5 text-green-dark">{t('welcome')}, {user?.displayName}!</h2>
-            <h2 className="text-4xl px-5 text-green-dark">{t("yourtrades")}</h2>
           </div>
           <div className="flex w-full justify-between px-5 pt-5">
             <div className="flex flex-col w-full gap-2 pr-10">

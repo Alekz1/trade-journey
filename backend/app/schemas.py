@@ -1,47 +1,46 @@
 from pydantic import BaseModel
+from decimal import Decimal
 from typing import Optional, List
 import datetime
 
 # -----------------------------
-# Partial Close Model
+# Base config for Decimal
 # -----------------------------
-class PartialClose(BaseModel):
-    exit_price: float
-    closed_quantity: float
-    fees: Optional[float] = 0.0
-    timestamp: Optional[datetime.datetime] = None
-    pnl: Optional[float] = None
-
+class DecimalBase(BaseModel):
     class Config:
         orm_mode = True
+        json_encoders = {
+            Decimal: lambda v: float(v)
+        }
+
+# -----------------------------
+# Partial Close Model
+# -----------------------------
+class PartialClose(DecimalBase):
+    exit_price: Decimal
+    closed_quantity: Decimal
+    fees: Optional[Decimal] = Decimal("0")
+    pnl: Optional[Decimal] = None
+    timestamp: Optional[datetime.datetime] = None
 
 # -----------------------------
 # Trade Models
 # -----------------------------
-class TradeBase(BaseModel):
+class TradeBase(DecimalBase):
     symbol: str
     side: str
-    entry_price: float
-    quantity: float
-    pnl: Optional[float] = None
+    entry_price: Decimal
+    quantity: Decimal
+    pnl: Optional[Decimal] = None
     timestamp: Optional[datetime.datetime] = None
-    partial_closes: List[PartialClose]
-    image_url: Optional[str]
+    partial_closes: List[PartialClose] = []
+    image_url: Optional[str] = None
 
 class TradeCreate(TradeBase):
-    """Model used when creating a new trade"""
     pass
 
 class Trade(TradeBase):
-    """Model returned from DB/API"""
     id: int
-
-    class Config:
-        orm_mode = True
-
-class TradeDelete(BaseModel):
-    trade_id: int
-    user_id: int
 
 # -----------------------------
 # User Models
@@ -53,7 +52,7 @@ class UserCreate(UserBase):
     password: str
 
 class User(UserBase):
-    uid: int
+    uid: str
 
     class Config:
         orm_mode = True
@@ -61,12 +60,11 @@ class User(UserBase):
 # -----------------------------
 # User Trade Summary
 # -----------------------------
-class UserTradeSummary(BaseModel):
+class UserTradeSummary(DecimalBase):
     user_id: str
-    total_pnl: float
-    winrate: float
+    total_pnl: Decimal
+    winrate: Decimal
     total_trades: int
-    sellpercent: float
-
+    sellpercent: Decimal
     class Config:
         orm_mode = True
