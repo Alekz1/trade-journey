@@ -1,36 +1,28 @@
 import React, { useState, useRef } from 'react';
 import api from '../services/api';
+import { Icon } from '@iconify/react';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CSV type detection (mirrors server-side logic, runs client-side for instant UX)
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Client-side CSV type detection (mirrors server logic) ──────────────────
 async function detectCsvType(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const header = e.target.result.split('\n')[0].toLowerCase();
-      if (header.includes('order id') || header.includes('fill price')) {
-        resolve('order');
-      } else if (header.includes('balance before') || header.includes('realized p')) {
-        resolve('balance');
-      } else {
-        resolve('unknown');
-      }
+      if (header.includes('order id') || header.includes('fill price')) resolve('order');
+      else if (header.includes('balance before') || header.includes('realized p')) resolve('balance');
+      else resolve('unknown');
     };
     reader.readAsText(file.slice(0, 512));
   });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Component
-// ─────────────────────────────────────────────────────────────────────────────
 const ImportCSV = ({ refresh }) => {
-  const [file, setFile]           = useState(null);
-  const [detectedType, setDetectedType] = useState(null); // 'order' | 'balance' | 'unknown'
-  const [manualOverride, setManualOverride] = useState(null); // null = use autodetect
-  const [loading, setLoading]     = useState(false);
-  const [result, setResult]       = useState(null);  // { success, message }
-  const fileInputRef              = useRef(null);
+  const [file, setFile]             = useState(null);
+  const [detectedType, setDetectedType] = useState(null);
+  const [manualOverride, setManualOverride] = useState(null);
+  const [loading, setLoading]       = useState(false);
+  const [result, setResult]         = useState(null);
+  const fileInputRef                = useRef(null);
 
   const activeType = manualOverride ?? detectedType;
 
@@ -44,13 +36,22 @@ const ImportCSV = ({ refresh }) => {
     setDetectedType(t);
   };
 
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    const f = e.dataTransfer.files[0];
+    if (!f || !f.name.endsWith('.csv')) return;
+    setFile(f);
+    setResult(null);
+    setManualOverride(null);
+    const t = await detectCsvType(f);
+    setDetectedType(t);
+  };
+
   const handleUpload = async () => {
     if (!file || !activeType || activeType === 'unknown') return;
-
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('csv_type', activeType);   // backend reads this to pick the right parser
-
+    formData.append('csv_type', activeType);
     setLoading(true);
     setResult(null);
     try {
@@ -78,225 +79,155 @@ const ImportCSV = ({ refresh }) => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // ── styles ─────────────────────────────────────────────────────────────────
-  const s = {
-    wrap: {
-      background: '#12141f',
-      border: '1px solid #1e2235',
-      borderRadius: 12,
-      padding: '20px 24px',
-      fontFamily: 'Inter, system-ui, sans-serif',
-      color: '#e2e8f0',
-      maxWidth: 520,
-    },
-    label: {
-      fontSize: 11,
-      color: '#475569',
-      textTransform: 'uppercase',
-      letterSpacing: '0.07em',
-      marginBottom: 6,
-      display: 'block',
-    },
-    dropzone: (active) => ({
-      border: `2px dashed ${active ? '#60a5fa' : '#1e2235'}`,
-      borderRadius: 8,
-      padding: '18px 16px',
-      textAlign: 'center',
-      cursor: 'pointer',
-      transition: 'border-color 0.15s',
-      marginBottom: 16,
-      background: active ? 'rgba(96,165,250,0.05)' : 'transparent',
-    }),
-    fileName: {
-      fontSize: 13,
-      color: '#94a3b8',
-      marginTop: 4,
-    },
-    typeRow: {
-      display: 'flex',
-      gap: 8,
-      marginBottom: 16,
-      alignItems: 'center',
-    },
-    typeBtn: (active, color) => ({
-      padding: '6px 14px',
-      borderRadius: 6,
-      fontSize: 12,
-      fontWeight: 600,
-      cursor: 'pointer',
-      border: active ? `1px solid ${color}` : '1px solid #1e2235',
-      background: active ? `${color}18` : '#0d0f1a',
-      color: active ? color : '#475569',
-      transition: 'all 0.15s',
-    }),
-    badge: (type) => ({
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 5,
-      padding: '3px 10px',
-      borderRadius: 9999,
-      fontSize: 11,
-      fontWeight: 600,
-      background:
-        type === 'balance' ? 'rgba(34,197,94,0.12)' :
-        type === 'order'   ? 'rgba(96,165,250,0.12)' :
-                             'rgba(239,68,68,0.12)',
-      color:
-        type === 'balance' ? '#22c55e' :
-        type === 'order'   ? '#60a5fa' :
-                             '#ef4444',
-    }),
-    warning: {
-      background: 'rgba(245,158,11,0.08)',
-      border: '1px solid rgba(245,158,11,0.25)',
-      borderRadius: 8,
-      padding: '10px 14px',
-      fontSize: 12,
-      color: '#fbbf24',
-      marginBottom: 16,
-      lineHeight: 1.5,
-    },
-    uploadBtn: (disabled) => ({
-      width: '100%',
-      padding: '10px',
-      borderRadius: 8,
-      fontSize: 13,
-      fontWeight: 600,
-      cursor: disabled ? 'not-allowed' : 'pointer',
-      border: 'none',
-      background: disabled ? '#1e2235' : '#3b82f6',
-      color: disabled ? '#334155' : '#fff',
-      transition: 'background 0.15s',
-    }),
-    resultBox: (success) => ({
-      marginTop: 12,
-      padding: '10px 14px',
-      borderRadius: 8,
-      fontSize: 12,
-      background: success ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
-      border: `1px solid ${success ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`,
-      color: success ? '#22c55e' : '#ef4444',
-    }),
-  };
-
   const isDisabled = loading || !file || !activeType || activeType === 'unknown';
 
+  // ── Type badge label / color ───────────────────────────────────────────
+  const typeLabel = {
+    balance: { label: '✓ Balance History', color: 'text-green-dark border-green-dark' },
+    order:   { label: '✓ Order History',   color: 'text-green-500 border-green-500' },
+    unknown: { label: '⚠ Unknown format',  color: 'text-yellow-500 border-yellow-600' },
+  };
+
+  const modeBtn = (val, label, isActive) =>
+    `px-3 py-1 text-xs border transition rounded ${
+      isActive
+        ? 'border-green-dark text-green-dark bg-green-950/40'
+        : 'border-green-900/60 text-green-800 bg-black hover:border-green-600 hover:text-green-600'
+    }`;
+
   return (
-    <div style={s.wrap}>
-      <div style={{ marginBottom: 16 }}>
-        <span style={{ fontSize: 15, fontWeight: 700, color: '#f1f5f9' }}>Import Trades</span>
-        <span style={{ fontSize: 12, color: '#334155', marginLeft: 8 }}>TradingView CSV</span>
+    <div className="border border-green-900/60 p-4 sm:p-5 font-jersey15 bg-black text-green-600">
+
+      {/* ── Title ── */}
+      <div className="flex items-center gap-2 mb-4">
+        <Icon icon="pixelarticons:file-plus" width={20} height={20} className="text-green-dark" />
+        <span className="text-green-dark text-lg">Import CSV</span>
+        <span className="text-green-900 text-xs ml-1">TradingView</span>
       </div>
 
-      {/* ── File picker ── */}
-      <span style={s.label}>Select file</span>
+      {/* ── Drop zone ── */}
       <div
-        style={s.dropzone(!!file)}
+        className={`border border-dashed transition cursor-pointer p-5 text-center mb-4 ${
+          file
+            ? 'border-green-600/80 bg-green-950/20'
+            : 'border-green-900/60 hover:border-green-600/60'
+        }`}
         onClick={() => fileInputRef.current?.click()}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={handleDrop}
       >
         <input
           ref={fileInputRef}
           type="file"
           accept=".csv"
           onChange={handleFileChange}
-          style={{ display: 'none' }}
+          className="hidden"
         />
         {file ? (
-          <>
-            <div style={{ fontSize: 22, marginBottom: 4 }}>📄</div>
-            <div style={{ fontSize: 13, color: '#94a3b8', fontWeight: 500 }}>{file.name}</div>
-            <div style={{ fontSize: 11, color: '#334155', marginTop: 2 }}>
-              {(file.size / 1024).toFixed(1)} KB · click to change
-            </div>
-          </>
+          <div className="flex flex-col items-center gap-1">
+            <Icon icon="pixelarticons:file" width={28} height={28} className="text-green-dark" />
+            <p className="text-green-dark text-sm font-semibold truncate max-w-full px-4">{file.name}</p>
+            <p className="text-green-900 text-xs">{(file.size / 1024).toFixed(1)} KB · click to change</p>
+          </div>
         ) : (
-          <>
-            <div style={{ fontSize: 22, marginBottom: 4 }}>⬆️</div>
-            <div style={{ fontSize: 13, color: '#475569' }}>Click to select a TradingView CSV</div>
-            <div style={{ fontSize: 11, color: '#334155', marginTop: 2 }}>
-              Order History or Balance History
-            </div>
-          </>
+          <div className="flex flex-col items-center gap-1">
+            <Icon icon="pixelarticons:upload" width={28} height={28} className="text-green-800" />
+            <p className="text-green-700 text-sm">Drop CSV here or click to select</p>
+            <p className="text-green-900 text-xs">Order History or Balance History</p>
+          </div>
         )}
       </div>
 
-      {/* ── Type selector ── */}
+      {/* ── Parser mode selector ── */}
       {file && (
-        <>
-          <span style={s.label}>Parser mode</span>
-          <div style={s.typeRow}>
-            {/* Auto-detect */}
+        <div className="mb-4">
+          <p className="text-green-900 text-xs mb-2 uppercase tracking-wider">Parser mode</p>
+          <div className="flex flex-wrap gap-2 items-center">
             <button
               onClick={() => setManualOverride(null)}
-              style={s.typeBtn(!manualOverride, '#a78bfa')}
+              className={modeBtn(null, 'Auto-detect', !manualOverride)}
             >
               Auto-detect
             </button>
-
-            {/* Balance History */}
             <button
               onClick={() => setManualOverride('balance')}
-              style={s.typeBtn(manualOverride === 'balance', '#22c55e')}
+              className={modeBtn('balance', 'Balance History', manualOverride === 'balance')}
             >
               Balance History
             </button>
-
-            {/* Order History */}
             <button
               onClick={() => setManualOverride('order')}
-              style={s.typeBtn(manualOverride === 'order', '#60a5fa')}
+              className={modeBtn('order', 'Order History', manualOverride === 'order')}
             >
               Order History
             </button>
 
-            {/* Detection result badge */}
+            {/* Detection badge */}
             {detectedType && !manualOverride && (
-              <span style={s.badge(detectedType)}>
-                {detectedType === 'balance' ? '✓ Balance' :
-                 detectedType === 'order'   ? '✓ Order'   :
-                                              '⚠ Unknown'}
+              <span className={`text-xs px-2 py-0.5 border ${typeLabel[detectedType]?.color ?? 'text-green-800 border-green-900'}`}>
+                {typeLabel[detectedType]?.label}
               </span>
             )}
           </div>
-
-          {/* ── Order History warning ── */}
-          {activeType === 'order' && (
-            <div style={s.warning}>
-              <strong>⚠ Order History limitation:</strong> This parser works correctly only
-              if the export covers the <em>full account history from the very first trade</em>.
-              If the file starts mid-history, close orders near the top of the file may have
-              no matching open order, causing wrong sides and P&amp;L.{' '}
-              <strong>Balance History is always accurate</strong> — use it when possible.
-            </div>
-          )}
-
-          {/* ── Unknown file warning ── */}
-          {activeType === 'unknown' && (
-            <div style={s.warning}>
-              ⚠ Could not detect file type. Please select Balance History or Order History manually above.
-            </div>
-          )}
-        </>
+        </div>
       )}
 
-      {/* ── Upload button ── */}
+      {/* ── Order History warning ── */}
+      {activeType === 'order' && (
+        <div className="border border-yellow-700/40 bg-yellow-950/20 p-3 mb-4 text-xs text-yellow-500 leading-relaxed">
+          <span className="text-yellow-400 font-semibold">⚠ Note:</span> Order History only
+          works correctly if exported from your <span className="text-yellow-400">very first trade</span>.
+          A partial export will produce wrong sides near the top of the file.{' '}
+          <span className="text-yellow-400">Balance History is always accurate</span>.
+        </div>
+      )}
+
+      {/* ── Unknown warning ── */}
+      {file && activeType === 'unknown' && (
+        <div className="border border-yellow-700/40 bg-yellow-950/20 p-3 mb-4 text-xs text-yellow-500">
+          ⚠ Could not detect file type. Please select a parser mode above.
+        </div>
+      )}
+
+      {/* ── Import button ── */}
       <button
         onClick={handleUpload}
         disabled={isDisabled}
-        style={s.uploadBtn(isDisabled)}
+        className={`w-full p-3 border text-base transition rounded ${
+          isDisabled
+            ? 'border-green-900/40 text-green-900 cursor-not-allowed'
+            : 'border-green-600/60 text-green-600 bg-black hover:border-green-300 hover:text-green-400'
+        }`}
       >
-        {loading ? 'Importing…' : `Import${activeType && activeType !== 'unknown' ? ` (${activeType === 'balance' ? 'Balance' : 'Order'} History)` : ''}`}
+        {loading ? (
+          <span className="flex items-center justify-center gap-2">
+            <Icon icon="pixelarticons:refresh" className="animate-spin" width={16} height={16} />
+            Importing…
+          </span>
+        ) : (
+          `Import${
+            activeType && activeType !== 'unknown'
+              ? ` (${activeType === 'balance' ? 'Balance' : 'Order'} History)`
+              : ''
+          }`
+        )}
       </button>
 
-      {/* ── Result message ── */}
+      {/* ── Result ── */}
       {result && (
-        <div style={s.resultBox(result.success)}>
+        <div
+          className={`mt-3 p-3 border text-sm ${
+            result.success
+              ? 'border-green-700/60 bg-green-950/30 text-green-dark'
+              : 'border-red-800/60 bg-red-950/20 text-red-500'
+          }`}
+        >
           {result.success ? '✓ ' : '✗ '}
           {result.message}
           {result.success && (
             <button
               onClick={handleReset}
-              style={{ marginLeft: 10, background: 'none', border: 'none', color: '#22c55e', cursor: 'pointer', fontSize: 12, textDecoration: 'underline' }}
+              className="ml-3 text-green-700 hover:text-green-500 underline text-xs transition"
             >
               Import another
             </button>

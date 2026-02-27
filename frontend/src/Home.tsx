@@ -1,11 +1,10 @@
-import React, { useState, useEffect, use } from "react";
-import { useNavigate, Link, redirect, To } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, To } from "react-router-dom";
 import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
 import api from "./services/api";
 import { auth } from "./services/firebase";
-import { Icon } from "@iconify/react"
+import { Icon } from "@iconify/react";
 
-import TradeForm from "./components/TradeForm";
 import TradeList from "./components/TradeList";
 import TradePnL from "./components/TradePnL";
 import LoginSignupButton from "./components/LoginSignupButton";
@@ -21,7 +20,6 @@ import { LanguageSelector } from "./components/LanguageSelector";
 import { useTranslation } from "react-i18next";
 import TradeForm2 from "./components/TradeForm2";
 
-// 🧠 Define types for trade and stats
 type Trade = {
   id?: number;
   symbol: string;
@@ -48,7 +46,7 @@ interface FTrade {
     timestamp: string | null;
     pnl: number | null;
   }[];
-  file: File | null
+  file: File | null;
 }
 
 type Filters = {
@@ -73,6 +71,7 @@ const Home: React.FC = () => {
   const [allTrades, setAllTrades] = useState<Trade[]>([]);
   const [userStats, setUserStats] = useState<UserStats>({ total_pnl: 0, winrate: 0, sellpercent: 0 });
   const [selectedTz, setSelectedTz] = useState<string>("Local Timezone");
+  const [showQuickAdd, setShowQuickAdd] = useState<boolean>(false);
   const [filters, setFilters] = useState<Filters>({
     symbol: "",
     side: "",
@@ -82,8 +81,7 @@ const Home: React.FC = () => {
   });
   const [loading, setLoading] = useState<boolean>(false);
 
-  const {t} = useTranslation();
-
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -110,13 +108,13 @@ const Home: React.FC = () => {
       setLoading(false);
     }
   };
+
   const fetchTradesUnfiltered = async () => {
     try {
       const res = await api.get<Trade[]>("/trades/");
       setAllTrades(res.data);
     } catch (err) {
       console.error("Failed to fetch trades:", err);
-      setError("Failed to fetch trades");
     }
   };
 
@@ -142,157 +140,225 @@ const Home: React.FC = () => {
     await fetchTrades();
     await fetchTradesUnfiltered();
     await refreshUserStats();
-  }
-
-  const refreshTradeList = async () => {
-    fetchTrades();
-    refreshUserStats();
   };
-  
+
   const handleTimezoneChange = (tz: string) => {
     setSelectedTz(tz);
-    localStorage.setItem('preferredTimezone', tz);
-    console.log(localStorage.getItem('preferredTimezone'));
-  }
+    localStorage.setItem("preferredTimezone", tz);
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const storedTz = localStorage.getItem('preferredTimezone');
-    console.log("Stored timezone:", storedTz);
-    if(storedTz){
-      setSelectedTz(storedTz);
-    }else setSelectedTz('Local Timezone');
+    const storedTz = localStorage.getItem("preferredTimezone");
+    if (storedTz) setSelectedTz(storedTz);
+    else setSelectedTz("Local Timezone");
     setIsLoggedIn(!!token);
     if (!token) return;
     fetchTrades();
     fetchUserStats();
     fetchTradesUnfiltered();
-    getUserData();
-  }, []);
-
-  const getUserData = async () => {
     const auth = getAuth();
-    onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser || null);
-    });
-    
-  };
+    onAuthStateChanged(auth, (currentUser) => setUser(currentUser || null));
+  }, []);
 
   const addTrade = async (trade: FTrade) => {
     try {
       const res = await api.post<Trade>("/trades/", trade);
       setTrades([...trades, res.data]);
-      handleTradeAdded();
+      await fullrefresh();
+      setShowQuickAdd(false);
     } catch (err: any) {
-      if (err.response && err.response.status === 401) {
-        setError(t("unauthorized"));
-      } else {
-        setError(t("addtradeerror"));
-      }
+      if (err.response?.status === 401) setError(t("unauthorized"));
+      else setError(t("addtradeerror"));
     }
-  };
-
-  const handleTradeAdded = () => {
-    fetchTrades();
-    fetchTradesUnfiltered();
-    refreshUserStats();
   };
 
   const handleFilterChange = (newFilters: Partial<Filters>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
   };
 
-  const handleApplyFilters = () => {
-    fetchTrades(filters);
-  };
-
-  const handleRedirect = (rurl: To) => {
-    navigate(rurl)
-  }
+  const handleApplyFilters = () => fetchTrades(filters);
 
   return (
-    <div className="font-jersey15 text-green-600 mx-auto">
-      <div className="flex justify-between border-b fixed w-full"/*Header*/>
-        <h1 className="px-4 p-2 text-green-dark">TradeJourney</h1>
-        <div className="m-4 flex gap-2">
-          <ClockWithTimezone timezone={selectedTz} />
+    <div className="font-jersey15 text-green-600 bg-black min-h-screen">
+
+      {/* ── Fixed Header ──────────────────────────────────────────────── */}
+      <header className="fixed top-0 inset-x-0 h-16 border-b border-green-900/60 z-50 bg-black flex items-center justify-between px-3">
+        <h1 className="text-xl sm:text-2xl text-green-dark font-workbech px-1">TradeJourney</h1>
+        <div className="flex items-center gap-1 sm:gap-2 overflow-hidden">
+          <div className="hidden sm:block"><ClockWithTimezone timezone={selectedTz} /></div>
           <TimezoneSelector selectedTz={selectedTz} onChange={handleTimezoneChange} />
-          <LanguageSelector /> 
+          <LanguageSelector />
           {!isLoggedIn && <LoginSignupButton />}
           {isLoggedIn && <LogoutButton />}
         </div>
-      </div>
-      <div className="flex fixed top-18.5"/*Sidebar + Main content*/>
-        <div className="w-1/20 h-screen border-r flex-col">
-          <img src={user?.photoURL ?? undefined} className="p-2.5 mt-2.5 mb-7.5 border-b"></img>
-          <div className="flex-col gap-5 text-center">
-            <button className="" onClick={()=>handleRedirect("/home")}>
-              <Icon icon="pixelarticons:home" width={45} height={45}/>
-            </button>
-            <button className="my-5" onClick={()=>handleRedirect("/trades")}>
-              <Icon icon="pixelarticons:chart-add" width={45} height={45}/>
-            </button>
-          </div>
-        </div>    
+      </header>
+
+      {/* ── Desktop Sidebar ───────────────────────────────────────────── */}
+      <aside className="hidden md:flex fixed left-0 top-16 h-[calc(100vh-4rem)] w-14 flex-col items-center border-r border-green-900/60 z-40 bg-black py-3 gap-4">
+        {user?.photoURL && (
+          <img
+            src={user.photoURL}
+            className="w-9 h-9 rounded-full border border-green-800 mb-2"
+            alt="avatar"
+          />
+        )}
+        <button
+          className="text-green-600 hover:text-green-300 transition"
+          onClick={() => navigate("/home")}
+          title="Home"
+        >
+          <Icon icon="pixelarticons:home" width={36} height={36} />
+        </button>
+        <button
+          className="text-green-600 hover:text-green-300 transition"
+          onClick={() => navigate("/trades")}
+          title="Trades"
+        >
+          <Icon icon="pixelarticons:chart-add" width={36} height={36} />
+        </button>
+      </aside>
+
+      {/* ── Mobile Bottom Nav ─────────────────────────────────────────── */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 h-16 border-t border-green-900/60 z-50 bg-black flex items-center justify-around px-6">
+        <button
+          className="flex flex-col items-center gap-0.5 text-green-600 hover:text-green-300 transition"
+          onClick={() => navigate("/home")}
+        >
+          <Icon icon="pixelarticons:home" width={28} height={28} />
+          <span className="text-xs">Home</span>
+        </button>
+
+        <button
+          className="flex flex-col items-center gap-0.5 text-green-600 hover:text-green-300 transition"
+          onClick={() => setShowQuickAdd(!showQuickAdd)}
+        >
+          <Icon icon="pixelarticons:plus-box" width={28} height={28} />
+          <span className="text-xs">{t("addtrade")}</span>
+        </button>
+
+        <button
+          className="flex flex-col items-center gap-0.5 text-green-600 hover:text-green-300 transition"
+          onClick={() => navigate("/trades")}
+        >
+          <Icon icon="pixelarticons:chart-add" width={28} height={28} />
+          <span className="text-xs">Trades</span>
+        </button>
+      </nav>
+
+      {/* ── Main Content ──────────────────────────────────────────────── */}
       {isLoggedIn && (
-        <div className="p-8 overflow-y-auto h-screen w-screen pb-30" /*Main content area*/>
-          <div className="flex justify-between">
-            <h2 className="text-4xl px-5 text-green-dark">{t('welcome')}, {user?.displayName}!</h2>
-          </div>
-          <div className="flex w-full justify-between px-5 pt-5">
-            <div className="flex flex-col w-full gap-2 pr-10">
-              <div className="flex place-items-stretch gap-3 text-2xl h-full max-h-75"/*PnL and Winrate display + Refresh button*/>
-                <div className="border w-1/2 ">
-                  <TradePnL userPnl={userStats.total_pnl}/>
-                  <div className="w-full z-100 px-5 pl-7">
-                    <TradeLineChart trades={allTrades} />
+        <main className="pt-16 md:ml-14 pb-20 md:pb-8 min-h-screen overflow-x-hidden">
+          <div className="p-4 sm:p-6 lg:p-8">
+
+            {/* Welcome */}
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl text-green-dark mb-5">
+              {t("welcome")}, {user?.displayName}!
+            </h2>
+
+            {/* Stats + Quick Add row */}
+            <div className="flex flex-col xl:flex-row gap-5">
+
+              {/* Stats column */}
+              <div className="flex flex-col gap-3 flex-1 min-w-0">
+
+                {/* PnL + Winrate chart cards */}
+                <div className="flex flex-col sm:flex-row gap-3">
+
+                  {/* PnL Card */}
+                  <div className="border border-green-900/60 flex-1 min-w-0 flex flex-col">
+                    <TradePnL userPnl={userStats.total_pnl} />
+                    {/* FIX: h-40 gives chart.js enough room for 6 Y-axis ticks */}
+                    <div className="h-40 px-3 pb-2">
+                      <TradeLineChart trades={allTrades} />
+                    </div>
+                  </div>
+
+                  {/* Winrate Card */}
+                  <div className="border border-green-900/60 flex-1 min-w-0 flex flex-col">
+                    <Winrate winrate={userStats.winrate} />
+                    {/* FIX: h-40 */}
+                    <div className="h-40 px-3 pb-2">
+                      <WinrateLineChart trades={allTrades} />
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Long/Short bar */}
+                <div className="border border-green-900/60 flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4">
+                  <p className="text-green-dark text-lg whitespace-nowrap">
+                    {t("totaltrades")}: {trades.length}
+                  </p>
+                  <div className="w-full flex flex-col gap-1">
+                    <DualProgressBar
+                      rightPercent={userStats.sellpercent ?? 0}
+                      leftColor="bg-green-500"
+                      rightColor="bg-red-600"
+                    />
+                    <div className="flex justify-between text-sm">
+                      <p className="text-green-dark">
+                        {t("buy")} %: {(100 - (userStats.sellpercent ?? 0)).toFixed(2)}%
+                      </p>
+                      <p className="text-red-600">
+                        {t("sell")} %: {userStats.sellpercent?.toFixed(2)}%
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="border w-1/2">
-                  <Winrate winrate={userStats.winrate} />
-                  <div className="w-full z-100 px-5 pl-7">
-                    <WinrateLineChart trades={allTrades} />
-                  </div>
-                </div>
+
+                {/* Refresh */}
+                <button
+                  className="border border-green-600/60 p-3 text-xl text-green-600 bg-black hover:border-green-300 transition rounded"
+                  onClick={refreshUserStats}
+                >
+                  {t("refreshstats")}
+                </button>
               </div>
-              <div className="border w-full flex justify-start items-center text-2xl mt-3 h-32">
-                <p className="text-green-dark px-5">{t('totaltrades')}: {trades.length}</p>
-                <div className="w-full pt-2.5 px-5 flex flex-col">
-                  <DualProgressBar rightPercent={userStats.sellpercent ?? 0} leftColor="bg-green-500" rightColor="bg-red-600" />
-                  <div className="flex justify-between w-full">
-                    <p className="text-green-dark px-2 pt-1">{t('buy')} %: {(100 - (userStats.sellpercent ?? 0)).toFixed(2)}%</p>
-                    <p className="text-red-600 px-2 pt-1">{t('sell')} %: {userStats.sellpercent?.toFixed(2)}%</p>
-                  </div>
-                </div>
+
+              {/* Quick Add — desktop inline, mobile as modal-ish panel */}
+              <div className="hidden md:flex flex-col items-start xl:w-80 shrink-0">
+                <p className="text-green-dark text-2xl mb-2">{t("quickadd")}</p>
+                <TradeForm2 onAdd={addTrade} compactMode={true} />
               </div>
-              <button className="flex border justify-center items-center text-3xl mt-3  text-green-600 bg-black/70 hover:border-green-300 transition rounded h-16" onClick={refreshUserStats}>
-                  {t('refreshstats')}
-              </button>
             </div>
-            <div className="flex flex-col items-center mx-7"/*New Trade Form*/>
-              <p className="text-green-dark text-4xl">{t('quickadd')}</p>
-              <TradeForm2 onAdd={addTrade} compactMode={true} />
+
+            {/* Mobile Quick Add Panel (toggle from bottom nav) */}
+            {showQuickAdd && (
+              <div className="md:hidden mt-4 border border-green-600/60 p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <p className="text-green-dark text-xl">{t("quickadd")}</p>
+                  <button
+                    className="text-green-600 hover:text-green-300"
+                    onClick={() => setShowQuickAdd(false)}
+                  >
+                    <Icon icon="pixelarticons:close" width={24} height={24} />
+                  </button>
+                </div>
+                <TradeForm2 onAdd={addTrade} compactMode={true} />
+              </div>
+            )}
+
+            {/* Trade List */}
+            <div className="mt-5 flex flex-col gap-5">
+              <TradeList
+                trades={trades}
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                onApplyFilters={handleApplyFilters}
+                loading={loading}
+                error={error}
+                refresh={fullrefresh}
+                selectedTz={selectedTz}
+              />
+              <div className="pt-2">
+                <ImportCSV refresh={fullrefresh} />
+              </div>
             </div>
-          </div> 
-          
-          <div className="flex flex-col gap-5">
-            <TradeList
-              trades={trades}
-              filters={filters}
-              onFilterChange={handleFilterChange}
-              onApplyFilters={handleApplyFilters}
-              loading={loading}
-              error={error}
-              refresh={fullrefresh}
-              selectedTz={selectedTz}
-            />
-            <div className="pt-5">
-              <ImportCSV refresh={fullrefresh} />
-            </div>
+
           </div>
-        </div>
+        </main>
       )}
-      </div>
     </div>
   );
 };

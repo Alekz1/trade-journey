@@ -1,5 +1,4 @@
 import { Icon } from "@iconify/react";
-import { parse } from "date-fns";
 import React, { useState, ChangeEvent, FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import FileUpload from "./FileUpload";
@@ -34,13 +33,18 @@ interface CleanedTradeFormData {
     timestamp: string | null;
     pnl: number | null;
   }[];
-  file: File | null
+  file: File | null;
 }
 
 interface TradeForm2Props {
   onAdd: (trade: CleanedTradeFormData) => void;
   compactMode?: boolean;
 }
+
+const inputClass =
+  "border border-green-600/60 p-2 rounded bg-black text-green-600 placeholder-green-900 focus:border-green-400 focus:outline-none w-full min-w-0 text-sm";
+const selectClass =
+  "border border-green-600/60 p-2 rounded bg-black text-green-600 focus:border-green-400 focus:outline-none text-sm";
 
 const TradeForm2: React.FC<TradeForm2Props> = ({ onAdd, compactMode }) => {
   const { t } = useTranslation();
@@ -51,7 +55,7 @@ const TradeForm2: React.FC<TradeForm2Props> = ({ onAdd, compactMode }) => {
     entry_price: "",
     quantity: "",
     pnl: "",
-    timestamp: ""
+    timestamp: "",
   });
 
   const [partialCloses, setPartialCloses] = useState<PartialClose[]>([
@@ -63,28 +67,13 @@ const TradeForm2: React.FC<TradeForm2Props> = ({ onAdd, compactMode }) => {
   const [file, setFile] = useState<File | null>(null);
 
   const validateQuantities = (quantity: string, closes: PartialClose[]) => {
-    if (useSingleClose) {
-      setValidationMsg("");
-      return;
-    }
-    const totalClosed = closes.reduce(
-      (sum, pc) => sum + (parseFloat(pc.closed_quantity) || 0),
-      0
-    );
+    if (useSingleClose) { setValidationMsg(""); return; }
+    const totalClosed = closes.reduce((sum, pc) => sum + (parseFloat(pc.closed_quantity) || 0), 0);
     const qty = parseFloat(quantity || "0");
-
-    if (!qty) {
-      setValidationMsg("");
-      return;
-    }
-
-    if (totalClosed > qty) {
-      setValidationMsg(t("closedQuantityExceeds"));
-    } else if (totalClosed < qty) {
-      setValidationMsg(t("closedQuantityLess"));
-    } else {
-      setValidationMsg(t(""));
-    }
+    if (!qty) { setValidationMsg(""); return; }
+    if (totalClosed > qty) setValidationMsg(t("closedQuantityExceeds"));
+    else if (totalClosed < qty) setValidationMsg(t("closedQuantityLess"));
+    else setValidationMsg(t(""));
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -101,16 +90,13 @@ const TradeForm2: React.FC<TradeForm2Props> = ({ onAdd, compactMode }) => {
   };
 
   const addPartialClose = () => {
-    const newCloses = [
-      ...partialCloses,
-      { exit_price: "", closed_quantity: "", fees: "", timestamp: "" },
-    ];
+    const newCloses = [...partialCloses, { exit_price: "", closed_quantity: "", fees: "", timestamp: "" }];
     setPartialCloses(newCloses);
     validateQuantities(form.quantity, newCloses);
   };
 
   const removePartialClose = (index: number) => {
-    if (partialCloses.length === 1) return; // Prevent removing the last close
+    if (partialCloses.length === 1) return;
     const newCloses = partialCloses.filter((_, i) => i !== index);
     setPartialCloses(newCloses);
     validateQuantities(form.quantity, newCloses);
@@ -118,15 +104,11 @@ const TradeForm2: React.FC<TradeForm2Props> = ({ onAdd, compactMode }) => {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     if (!form.symbol || !form.entry_price || !form.quantity) {
       alert(t("fillrequiredfields"));
       return;
     }
-
-    if(validationMsg){
-      return
-    }
+    if (validationMsg) return;
 
     const cleanedForm: CleanedTradeFormData = {
       symbol: form.symbol,
@@ -142,13 +124,10 @@ const TradeForm2: React.FC<TradeForm2Props> = ({ onAdd, compactMode }) => {
         timestamp: pc.timestamp || null,
         pnl: null,
       })),
-      file: file ? file : null
+      file: file ?? null,
     };
 
     onAdd(cleanedForm);
-    console.log("Submitting trade:", cleanedForm);
-
-    // Reset
     setForm({ symbol: "", side: "buy", entry_price: "", quantity: "", pnl: "", timestamp: "" });
     setPartialCloses([{ exit_price: "", closed_quantity: "", fees: "", timestamp: "" }]);
     setUseSingleClose(true);
@@ -160,174 +139,129 @@ const TradeForm2: React.FC<TradeForm2Props> = ({ onAdd, compactMode }) => {
       ? "text-green-500"
       : validationMsg === t("closedQuantityLess")
       ? "text-yellow-500"
-      : validationMsg === t("closedQuantityExceeds")
-      ? "text-red-500"
-      : "";
+      : "text-red-500";
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3 p-9 max-w-100">
-      {/* Main trade fields */}
-      <div className="flex gap-3">
+    <form
+      onSubmit={handleSubmit}
+      className={`flex flex-col gap-3 ${compactMode ? "w-full max-w-xs" : "w-full max-w-2xl"}`}
+    >
+      {/* ── Symbol / Qty / Side row ── */}
+      <div className="flex flex-wrap gap-2">
         <input
           name="symbol"
           value={form.symbol}
           onChange={handleChange}
           placeholder={t("symbol")}
-          className="border p-2 rounded w-full"
+          className={`${inputClass} flex-1 min-w-[80px]`}
         />
         <input
           name="quantity"
           value={form.quantity}
           onChange={handleChange}
           placeholder={t("quantity")}
-          className="border p-2 rounded w-full"
+          className={`${inputClass} flex-1 min-w-[80px]`}
         />
         <select
           name="side"
           value={form.side}
           onChange={handleChange}
-          className="border p-2 rounded w-2/3"
-          style={{ backgroundColor: "#242424" }}
+          className={`${selectClass} w-24`}
         >
           <option value="buy">{t("buy")}</option>
           <option value="sell">{t("sell")}</option>
         </select>
       </div>
 
+      {/* ── Entry price ── */}
       <input
         name="entry_price"
         value={form.entry_price}
         onChange={handleChange}
         placeholder={t("entry")}
-        className="border p-2 rounded"
+        className={inputClass}
       />
 
-      {/* Toggle for single vs multiple closes */}
-      <div className="flex gap-3 text-lg items-center">
-        <label>{t("singleCloseMode")}</label>
+      {/* ── Single/multi toggle ── */}
+      <div className="flex gap-3 text-sm items-center">
+        <label className="text-green-600">{t("singleCloseMode")}</label>
         <input
           type="checkbox"
           checked={!useSingleClose}
           onChange={() => setUseSingleClose(!useSingleClose)}
+          className="accent-green-600"
         />
       </div>
 
-      {/* Single close mode */}
+      {/* ── Single close ── */}
       {useSingleClose && (
-        <div className={`flex gap-2 ${compactMode ? "flex-col" : ""}`}>
-          <div className="flex gap-2">
-            <input
-              name="exit_price"
-              value={partialCloses[0]?.exit_price || ""}
-              onChange={(e) => handlePartialChange(0, e)}
-              placeholder={t("exit")}
-              className="border p-2 rounded"
-            />
-            <input
-              name="fees"
-              value={partialCloses[0]?.fees ?? ''}
-              onChange={(e) => handlePartialChange(0, e)}
-              placeholder={t("fees")}
-              className="border p-2 rounded"
-            />
-          </div>
-
-          {/* Timestamp on its own row in compact mode */}
+        <div className="flex flex-wrap gap-2">
+          <input
+            name="exit_price"
+            value={partialCloses[0]?.exit_price || ""}
+            onChange={(e) => handlePartialChange(0, e)}
+            placeholder={t("exit")}
+            className={`${inputClass} flex-1 min-w-[90px]`}
+          />
+          <input
+            name="fees"
+            value={partialCloses[0]?.fees ?? ""}
+            onChange={(e) => handlePartialChange(0, e)}
+            placeholder={t("fees")}
+            className={`${inputClass} flex-1 min-w-[80px]`}
+          />
           <input
             name="timestamp"
             type="datetime-local"
-            value={partialCloses[0]?.timestamp ?? ''}
+            value={partialCloses[0]?.timestamp ?? ""}
             onChange={(e) => handlePartialChange(0, e)}
-            className="border p-2 rounded"
+            className={`${inputClass} flex-1 min-w-[160px]`}
           />
         </div>
       )}
 
-
-      {/* Multiple close mode */}
+      {/* ── Multiple closes ── */}
       {!useSingleClose && (
         <div className="flex flex-col gap-3">
-          <h3 className="text-sm text-gray-400">{t("partialCloses")}</h3>
-
+          <h3 className="text-xs text-green-800">{t("partialCloses")}</h3>
           {partialCloses.map((pc, index) => (
-            <div key={index} className="flex flex-col gap-2">
-
-              {/* Row 1 */}
-              <div className="flex gap-2 items-center">
-                <input
-                  name="exit_price"
-                  value={pc.exit_price}
-                  onChange={(e) => handlePartialChange(index, e)}
-                  placeholder={t("exit")}
-                  className="border p-2 rounded"
-                />
-                <input
-                  name="closed_quantity"
-                  value={pc.closed_quantity}
-                  onChange={(e) => handlePartialChange(index, e)}
-                  placeholder={t("closedQuantity")}
-                  className="border p-2 rounded"
-                />
-
-                {/* Fees stays here only if NOT compact */}
-                {!compactMode && (
-                  <input
-                    name="fees"
-                    value={pc.fees}
-                    onChange={(e) => handlePartialChange(index, e)}
-                    placeholder={t("fees")}
-                    className="border p-2 rounded"
-                  />
-                )}
-
-                {/* Timestamp stays here only if NOT compact */}
-                {!compactMode && (
-                  <div>
-                  <input
-                    name="timestamp"
-                    type="datetime-local"
-                    value={pc.timestamp}
-                    onChange={(e) => handlePartialChange(index, e)}
-                    className="border p-2 rounded"
-                  />
-                    <button
-                    type="button"
-                    onClick={() => removePartialClose(index)}
-                    className="text-red-500 border p-2 rounded border-green-500"
-                  >
-                    <Icon icon="pixelarticons:close-box" />
-                  </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Row 2 (compact mode only) */}
-              {compactMode && (
-                <div className="flex gap-2">
-                  <input
-                    name="fees"
-                    value={pc.fees}
-                    onChange={(e) => handlePartialChange(index, e)}
-                    placeholder={t("fees")}
-                    className="border p-2 rounded"
-                  />
-                  <input
-                    name="timestamp"
-                    type="datetime-local"
-                    value={pc.timestamp}
-                    onChange={(e) => handlePartialChange(index, e)}
-                    className="border p-2 rounded max-w-41"
-                  />
-                {partialCloses.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removePartialClose(index)}
-                    className="text-red-500 border p-2 rounded border-green-500"
-                  >
-                    <Icon icon="pixelarticons:close-box" />
-                  </button>
-                )}
-                </div>
+            <div key={index} className="flex flex-wrap gap-2 items-start border border-green-900/40 p-2 rounded">
+              <input
+                name="exit_price"
+                value={pc.exit_price}
+                onChange={(e) => handlePartialChange(index, e)}
+                placeholder={t("exit")}
+                className={`${inputClass} flex-1 min-w-[80px]`}
+              />
+              <input
+                name="closed_quantity"
+                value={pc.closed_quantity}
+                onChange={(e) => handlePartialChange(index, e)}
+                placeholder={t("closedQuantity")}
+                className={`${inputClass} flex-1 min-w-[80px]`}
+              />
+              <input
+                name="fees"
+                value={pc.fees}
+                onChange={(e) => handlePartialChange(index, e)}
+                placeholder={t("fees")}
+                className={`${inputClass} flex-1 min-w-[70px]`}
+              />
+              <input
+                name="timestamp"
+                type="datetime-local"
+                value={pc.timestamp}
+                onChange={(e) => handlePartialChange(index, e)}
+                className={`${inputClass} flex-1 min-w-[160px]`}
+              />
+              {partialCloses.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removePartialClose(index)}
+                  className="text-red-600 border border-red-900/60 p-1.5 rounded hover:border-red-500 transition"
+                >
+                  <Icon icon="pixelarticons:close-box" width={16} height={16} />
+                </button>
               )}
             </div>
           ))}
@@ -335,7 +269,7 @@ const TradeForm2: React.FC<TradeForm2Props> = ({ onAdd, compactMode }) => {
           <button
             type="button"
             onClick={addPartialClose}
-            className="border p-2 text-green-500 bg-black/50 hover:border-green-300 transition rounded"
+            className="border border-green-600/60 p-2 text-green-600 bg-black hover:border-green-300 transition rounded text-sm"
           >
             {t("addPartialClose")}
           </button>
@@ -343,16 +277,14 @@ const TradeForm2: React.FC<TradeForm2Props> = ({ onAdd, compactMode }) => {
       )}
 
       <FileUpload onFileSelect={(selectedFile) => setFile(selectedFile)} />
-      {/* Validation message above submit */}
+
       {validationMsg && (
-        <p className={`font-semibold mb-2 ${validationClass}`}>
-          {validationMsg}
-        </p>
+        <p className={`text-sm font-semibold ${validationClass}`}>{validationMsg}</p>
       )}
 
       <button
         type="submit"
-        className="border p-2 text-green-600 bg-black/70 hover:border-green-300 transition rounded text-3xl"
+        className="border border-green-600/60 p-2 text-green-600 bg-black hover:border-green-300 transition rounded text-xl sm:text-2xl"
       >
         {t("addtrade")}
       </button>

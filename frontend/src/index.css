@@ -1,9 +1,9 @@
 @import "tailwindcss";
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
   background-color: #000000;
@@ -11,26 +11,28 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  
 }
+
 html, body, #root {
   height: 100%;
   width: 100%;
 }
 
-
-
-.font-workbech {
-  font-family: "boldpixels.pixels-boldspixels", sans-serif;
-  src: url('./boldpixels.pixels-boldspixels.ttf');
-  font-optical-sizing: auto;
-  font-weight: 400;
-  font-style: normal;
-  font-variation-settings:
-    "BLED" 0,
-    "SCAN" 0;
+/* Prevent horizontal overflow at root level */
+html {
+  overflow-x: hidden;
 }
 
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  /* Remove place-items: center — it fights with fixed layout */
+  display: block;
+  overflow-x: hidden;
+}
+
+/* ── Pixel fonts ──────────────────────────────────────────────────────── */
 @font-face {
   font-family: 'boldpixels.pixels-boldspixels';
   src: url('./boldpixels.pixels-boldspixels.ttf') format('truetype');
@@ -38,54 +40,44 @@ html, body, #root {
   font-style: normal;
 }
 
-.font-jersey15{
+.font-workbech {
   font-family: "boldpixels.pixels-boldspixels", sans-serif;
-  src: url('./boldpixels.pixels-boldspixels.ttf') format('truetype');
+  font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
 }
 
-.text-green-dark{
+.font-jersey15 {
+  font-family: "boldpixels.pixels-boldspixels", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* ── Brand color ──────────────────────────────────────────────────────── */
+.text-green-dark {
   color: #00920F;
 }
 
+/* ── Global link ──────────────────────────────────────────────────────── */
 a {
   font-weight: 500;
   color: #00920F;
   text-decoration: inherit;
 }
 
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
+/* ── h1 default — only applies outside of Tailwind-managed elements ──── */
 h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+  font-size: 2em;
+  line-height: 1.2;
 }
 
-button:focus,
+/* ── Focus rings ──────────────────────────────────────────────────────── */
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: 2px solid #00920F;
+  outline-offset: 2px;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-}
+/* ── Landing page canvas ──────────────────────────────────────────────── */
 canvas#bg {
   position: fixed;
   top: 0;
@@ -93,4 +85,31 @@ canvas#bg {
   z-index: -1;
   width: 100vw;
   height: 100vh;
+}
+
+/* ── Scrollbar styling (webkit) ───────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #000;
+}
+::-webkit-scrollbar-thumb {
+  background: #00920F40;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00920F80;
+}
+
+/* ── Prevent iOS tap highlight ────────────────────────────────────────── */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── datetime-local input theming ────────────────────────────────────── */
+input[type="datetime-local"],
+input[type="date"] {
+  color-scheme: dark;
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { To, useNavigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
 import api from "./services/api";
-import {Icon} from "@iconify/react"
+import { Icon } from "@iconify/react";
 
 import TradeList from "./components/TradeList";
 import LoginSignupButton from "./components/LoginSignupButton";
@@ -27,7 +27,7 @@ type Trade = {
     fees: number | null;
     timestamp: string | null;
   }[];
-  file: File | null
+  file: File | null;
 };
 
 type Filters = {
@@ -50,11 +50,7 @@ const Trades: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [allTrades, setAllTrades] = useState<Trade[]>([]);
-  const [userStats, setUserStats] = useState<UserStats>({
-    total_pnl: 0,
-    winrate: 0,
-    sellpercent: 0,
-  });
+  const [userStats, setUserStats] = useState<UserStats>({ total_pnl: 0, winrate: 0, sellpercent: 0 });
   const [selectedTz, setSelectedTz] = useState<string>("Local Timezone");
   const [filters, setFilters] = useState<Filters>({
     symbol: "",
@@ -67,17 +63,6 @@ const Trades: React.FC = () => {
 
   const { t } = useTranslation();
   const navigate = useNavigate();
-
-  const handleLogout = () => {
-    const auth = getAuth();
-    signOut(auth).catch((err) => console.error("Firebase logout error:", err));
-    localStorage.removeItem("token");
-  };
-
-  const handleRedirect = (rurl: To) => {
-    navigate(rurl)
-  }
-
 
   const fetchTrades = async (activeFilters: Filters = filters) => {
     try {
@@ -104,7 +89,6 @@ const Trades: React.FC = () => {
       setAllTrades(res.data);
     } catch (err) {
       console.error("Failed to fetch trades:", err);
-      setError("Failed to fetch trades");
     }
   };
 
@@ -132,115 +116,123 @@ const Trades: React.FC = () => {
     await refreshUserStats();
   };
 
-  const refreshTradeList = async () => {
-    fetchTrades();
-    refreshUserStats();
-  };
-
   const handleTimezoneChange = (tz: string) => {
     setSelectedTz(tz);
     localStorage.setItem("preferredTimezone", tz);
-    console.log(localStorage.getItem("preferredTimezone"));
   };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     const storedTz = localStorage.getItem("preferredTimezone");
-    console.log("Stored timezone:", storedTz);
-    if (storedTz) {
-      setSelectedTz(storedTz);
-    } else setSelectedTz("Local Timezone");
+    if (storedTz) setSelectedTz(storedTz);
+    else setSelectedTz("Local Timezone");
     setIsLoggedIn(!!token);
     if (!token) return;
     fetchTrades();
     fetchUserStats();
     fetchTradesUnfiltered();
-    getUserData();
+    const auth = getAuth();
+    onAuthStateChanged(auth, (currentUser) => setUser(currentUser || null));
   }, []);
 
-  const getUserData = async () => {
-    const auth = getAuth();
-    onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser || null);
-    });
-  };
-
   const addTrade = async (trade: Trade) => {
-  try {
-    const fd = new FormData();
-    fd.append("symbol", trade.symbol);
-    fd.append("side", trade.side);
-    fd.append("entry_price", String(trade.entry_price));
-    fd.append("quantity", String(trade.quantity));
-    fd.append("partial_closes", JSON.stringify(trade.partial_closes));
-
-    if (trade.file) {
-      fd.append("file", trade.file);
+    try {
+      const fd = new FormData();
+      fd.append("symbol", trade.symbol);
+      fd.append("side", trade.side);
+      fd.append("entry_price", String(trade.entry_price));
+      fd.append("quantity", String(trade.quantity));
+      fd.append("partial_closes", JSON.stringify(trade.partial_closes));
+      if (trade.file) fd.append("file", trade.file);
+      const res = await api.post<Trade>("/trades/", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setTrades((prev) => [...prev, res.data]);
+      await fullrefresh();
+    } catch (err: any) {
+      if (err.response?.status === 401) setError(t("unauthorized"));
+      else setError(t("addtradeerror"));
     }
-
-    const res = await api.post<Trade>("/trades/", fd, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-    setTrades((prev) => [...prev, res.data]);
-    handleTradeAdded();
-  } catch (err: any) {
-    if (err.response && err.response.status === 401) {
-      setError(t("unauthorized"));
-    } else {
-      setError(t("addtradeerror"));
-      console.error("Error:", err.response?.data || err);
-    }
-  }
-};
-
-  const handleTradeAdded = () => {
-    fetchTrades();
-    fetchTradesUnfiltered();
-    refreshUserStats();
   };
 
   const handleFilterChange = (newFilters: Partial<Filters>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
   };
 
-  const handleApplyFilters = () => {
-    fetchTrades(filters);
-  };
+  const handleApplyFilters = () => fetchTrades(filters);
 
   return (
-    <div className="font-jersey15 text-green-600 mx-auto">
-      <div className="flex justify-between border-b fixed w-full">
-        <h1 className="px-4 p-2 text-green-dark">TradeJourney</h1>
-        <div className="m-4 flex gap-2">
-          <ClockWithTimezone timezone={selectedTz} />
+    <div className="font-jersey15 text-green-600 bg-black min-h-screen">
+
+      {/* ── Fixed Header ──────────────────────────────────────────────── */}
+      <header className="fixed top-0 inset-x-0 h-16 border-b border-green-900/60 z-50 bg-black flex items-center justify-between px-3">
+        <h1 className="text-xl sm:text-2xl text-green-dark font-workbech px-1">TradeJourney</h1>
+        <div className="flex items-center gap-1 sm:gap-2 overflow-hidden">
+          <div className="hidden sm:block"><ClockWithTimezone timezone={selectedTz} /></div>
           <TimezoneSelector selectedTz={selectedTz} onChange={handleTimezoneChange} />
           <LanguageSelector />
           {!isLoggedIn && <LoginSignupButton />}
           {isLoggedIn && <LogoutButton />}
         </div>
-      </div>
-      <div className="flex fixed top-18.5">
-        <div className="w-1/20 h-screen border-r flex-col">
-          <img src={user?.photoURL ?? undefined} className="p-2.5 mt-2.5 mb-7.5 border-b"></img>
-          <div className="flex-col gap-5 text-center">
-            <button className="" onClick={()=>handleRedirect("/home")}>
-              <Icon icon="pixelarticons:home" width={45} height={45}/>
-            </button>
-            <button className="my-5" onClick={()=>handleRedirect("/trades")}>
-              <Icon icon="pixelarticons:chart-add" width={45} height={45}/>
-            </button>
-          </div>
-        </div>  
-        {isLoggedIn && (
-          <div className="p-8 overflow-y-auto h-screen w-screen pb-30">
-            <div className="flex justify-between">
-              <h2 className="text-4xl px-1 mb-2.5 text-green-dark">
-                {t("addtrade")}
-              </h2>
-            </div>
+      </header>
+
+      {/* ── Desktop Sidebar ───────────────────────────────────────────── */}
+      <aside className="hidden md:flex fixed left-0 top-16 h-[calc(100vh-4rem)] w-14 flex-col items-center border-r border-green-900/60 z-40 bg-black py-3 gap-4">
+        {user?.photoURL && (
+          <img
+            src={user.photoURL}
+            className="w-9 h-9 rounded-full border border-green-800 mb-2"
+            alt="avatar"
+          />
+        )}
+        <button
+          className="text-green-600 hover:text-green-300 transition"
+          onClick={() => navigate("/home")}
+          title="Home"
+        >
+          <Icon icon="pixelarticons:home" width={36} height={36} />
+        </button>
+        <button
+          className="text-green-600 hover:text-green-300 transition"
+          onClick={() => navigate("/trades")}
+          title="Trades"
+        >
+          <Icon icon="pixelarticons:chart-add" width={36} height={36} />
+        </button>
+      </aside>
+
+      {/* ── Mobile Bottom Nav ─────────────────────────────────────────── */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 h-16 border-t border-green-900/60 z-50 bg-black flex items-center justify-around px-6">
+        <button
+          className="flex flex-col items-center gap-0.5 text-green-600 hover:text-green-300 transition"
+          onClick={() => navigate("/home")}
+        >
+          <Icon icon="pixelarticons:home" width={28} height={28} />
+          <span className="text-xs">Home</span>
+        </button>
+        <button
+          className="flex flex-col items-center gap-0.5 text-green-600 hover:text-green-300 transition"
+          onClick={() => navigate("/trades")}
+        >
+          <Icon icon="pixelarticons:chart-add" width={28} height={28} />
+          <span className="text-xs">Trades</span>
+        </button>
+      </nav>
+
+      {/* ── Main Content ──────────────────────────────────────────────── */}
+      {isLoggedIn && (
+        <main className="pt-16 md:ml-14 pb-20 md:pb-8 min-h-screen overflow-x-hidden">
+          <div className="p-4 sm:p-6 lg:p-8">
+
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl text-green-dark mb-5">
+              {t("addtrade")}
+            </h2>
+
             <TradeForm2 onAdd={addTrade} />
+
             {error && <p className="text-red-600 my-4">{error}</p>}
-            <div className="flex flex-col gap-5">
+
+            <div className="flex flex-col gap-5 mt-4">
               <TradeList
                 trades={trades}
                 filters={filters}
@@ -251,13 +243,14 @@ const Trades: React.FC = () => {
                 refresh={fullrefresh}
                 selectedTz={selectedTz}
               />
-              <div className="pt-5">
+              <div className="pt-2">
                 <ImportCSV refresh={fullrefresh} />
               </div>
             </div>
+
           </div>
-        )}
-      </div>
+        </main>
+      )}
     </div>
   );
 };

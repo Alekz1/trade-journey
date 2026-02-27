@@ -6,16 +6,16 @@ import {
   CategoryScale,
   LinearScale,
   Tooltip,
-  Legend,
+  Filler,
   ChartOptions,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { format } from 'date-fns';
 
-ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend);
+ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Filler);
 
 export type Trade = {
-  timestamp: string; // ISO string like "2025-11-01T14:30:00Z"
+  timestamp: string;
   pnl: number;
 };
 
@@ -34,9 +34,13 @@ export const TradeLineChart: React.FC<TradeLineChartProps> = ({ trades }) => {
 
   sortedTrades.forEach((trade) => {
     cumulative += trade.pnl;
-    labels.push(format(new Date(trade.timestamp), 'MMM d, HH:mm')); // changed from trade.date
+    labels.push(format(new Date(trade.timestamp), 'MMM d'));
     pnlData.push(parseFloat(cumulative.toFixed(2)));
   });
+
+  const isPositive = cumulative >= 0;
+  const lineColor = isPositive ? '#00920F' : '#dc2626';
+  const fillColor = isPositive ? 'rgba(0,146,15,0.1)' : 'rgba(220,38,38,0.1)';
 
   const data = {
     labels,
@@ -44,34 +48,61 @@ export const TradeLineChart: React.FC<TradeLineChartProps> = ({ trades }) => {
       {
         label: '',
         data: pnlData,
-        borderColor: '#00920F',
-        backgroundColor: 'rgba(34,197,94,0.2)',
-        fill: false,
-        tension: 0.3,
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        borderColor: lineColor,
+        backgroundColor: fillColor,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 3,
+        borderWidth: 1.5,
       },
     ],
   };
 
   const options: ChartOptions<'line'> = {
     responsive: true,
+    // FIX: must be false so the chart respects the container's explicit height
+    maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
-      tooltip: { mode: 'index', intersect: false },
-    },
-    scales: {
-        x: {
-            display: false,
-        },
-      y: {
-        beginAtZero: false,
-        ticks: {
-          callback: (value: number | string) => `$${value}`,
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        backgroundColor: '#000',
+        borderColor: '#00920F',
+        borderWidth: 1,
+        titleColor: '#00920F',
+        bodyColor: '#86efac',
+        callbacks: {
+          label: (ctx) => ` $${ctx.parsed.y !== null ? ctx.parsed.y.toFixed(2) : '0.00'}`,
         },
       },
     },
+    scales: {
+      x: { display: false },
+      y: {
+        display: true,
+        beginAtZero: false,
+        grid: { color: 'rgba(0,146,15,0.08)' },
+        ticks: {
+          color: '#00920F',
+          font: { size: 10 },
+          callback: (value) => `$${Number(value).toFixed(0)}`,
+          maxTicksLimit: 6,
+        },
+        border: { display: false },
+      },
+    },
+    animation: { duration: 300 },
   };
+
+  if (!sortedTrades.length) {
+    return (
+      <div className="flex items-center justify-center h-full text-green-700 text-sm opacity-40">
+        no data
+      </div>
+    );
+  }
 
   return <Line data={data} options={options} />;
 };

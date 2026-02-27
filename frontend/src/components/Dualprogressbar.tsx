@@ -1,9 +1,10 @@
 interface DualProgressBarProps {
-  leftPercent?: number;       // Optional: % for left side
-  rightPercent?: number;      // Optional: % for right side
-  reverse?: boolean;          // Optional: flip color order
-  leftColor?: string;         // Tailwind class, default: 'bg-blue-500'
-  rightColor?: string;        // Tailwind class, default: 'bg-amber-500'
+  leftPercent?: number;
+  rightPercent?: number;
+  reverse?: boolean;
+  leftColor?: string;
+  rightColor?: string;
+  height?: string;
 }
 
 export const DualProgressBar = ({
@@ -12,6 +13,7 @@ export const DualProgressBar = ({
   reverse = false,
   leftColor = 'bg-blue-500',
   rightColor = 'bg-amber-500',
+  height = 'h-3',
 }: DualProgressBarProps) => {
   const left = leftPercent ?? (rightPercent !== undefined ? 100 - rightPercent : 50);
   const right = 100 - left;
@@ -20,10 +22,17 @@ export const DualProgressBar = ({
   const rightClass = reverse ? leftColor : rightColor;
 
   return (
-    <div className="w-full h-4 bg-gray-200 rounded overflow-hidden">
+    // FIX: bg-green-950/40 instead of bg-gray-200 so track is visible on dark theme
+    <div className={`w-full ${height} bg-green-950/40 border border-green-900/40 rounded overflow-hidden`}>
       <div className="flex h-full">
-        <div className={`${leftClass}`} style={{ width: `${left}%` }} />
-        <div className={`${rightClass}`} style={{ width: `${right}%` }} />
+        <div
+          className={`${leftClass} transition-all duration-500`}
+          style={{ width: `${left}%` }}
+        />
+        <div
+          className={`${rightClass} transition-all duration-500`}
+          style={{ width: `${right}%` }}
+        />
       </div>
     </div>
   );

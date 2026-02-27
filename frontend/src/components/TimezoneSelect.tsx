@@ -1,4 +1,5 @@
 import React from 'react';
+import { Icon } from '@iconify/react';
 
 interface TimezoneSelectorProps {
   selectedTz: string;
@@ -17,19 +18,21 @@ const timezones = [
 
 export const TimezoneSelector: React.FC<TimezoneSelectorProps> = ({ selectedTz, onChange }) => {
   return (
-    <div className="flex flex-col gap-1">
-      <select
-        id="timezone"
-        value={selectedTz}
-        onChange={(e) => onChange(e.target.value)}
-        className="border rounded px-3 py-2 text-green-600 border-green-600/60 bg-black shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 h-full"
-      >
-        {timezones.map((tz) => (
-          <option key={tz} value={tz}>
-            {tz}
-          </option>
-        ))}
-      </select>
-    </div>
+    // FIX: removed flex-col wrapper that was breaking height alignment in header
+    <select
+      value={selectedTz}
+      onChange={(e) => onChange(e.target.value)}
+      className="border border-green-600/60 text-green-600 bg-black px-2 py-1.5 text-sm
+                 focus:outline-none focus:ring-1 focus:ring-green-500 rounded
+                 max-w-[90px] sm:max-w-[140px] md:max-w-none"
+      title="Timezone"
+    >
+      {timezones.map((tz) => (
+        <option key={tz} value={tz}>
+          {/* Shorten display names for mobile */}
+          {tz === 'Local Timezone' ? '⏱ Local' : tz}
+        </option>
+      ))}
+    </select>
   );
 };
