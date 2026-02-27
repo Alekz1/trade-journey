@@ -37,12 +37,11 @@ interface CleanedTradeFormData {
   file: File | null
 }
 
-interface TradeForm2Props {
+interface TradeFormProps {
   onAdd: (trade: CleanedTradeFormData) => void;
-  compactMode?: boolean;
 }
 
-const TradeForm2: React.FC<TradeForm2Props> = ({ onAdd, compactMode }) => {
+const TradeForm: React.FC<TradeFormProps> = ({ onAdd }) => {
   const { t } = useTranslation();
 
   const [form, setForm] = useState<TradeFormData>({
@@ -110,7 +109,6 @@ const TradeForm2: React.FC<TradeForm2Props> = ({ onAdd, compactMode }) => {
   };
 
   const removePartialClose = (index: number) => {
-    if (partialCloses.length === 1) return; // Prevent removing the last close
     const newCloses = partialCloses.filter((_, i) => i !== index);
     setPartialCloses(newCloses);
     validateQuantities(form.quantity, newCloses);
@@ -165,7 +163,7 @@ const TradeForm2: React.FC<TradeForm2Props> = ({ onAdd, compactMode }) => {
       : "";
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3 p-9 max-w-100">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3 w-full">
       {/* Main trade fields */}
       <div className="flex gap-3">
         <input
@@ -214,134 +212,83 @@ const TradeForm2: React.FC<TradeForm2Props> = ({ onAdd, compactMode }) => {
 
       {/* Single close mode */}
       {useSingleClose && (
-        <div className={`flex gap-2 ${compactMode ? "flex-col" : ""}`}>
-          <div className="flex gap-2">
-            <input
-              name="exit_price"
-              value={partialCloses[0]?.exit_price || ""}
-              onChange={(e) => handlePartialChange(0, e)}
-              placeholder={t("exit")}
-              className="border p-2 rounded"
-            />
-            <input
-              name="fees"
-              value={partialCloses[0]?.fees ?? ''}
-              onChange={(e) => handlePartialChange(0, e)}
-              placeholder={t("fees")}
-              className="border p-2 rounded"
-            />
-          </div>
-
-          {/* Timestamp on its own row in compact mode */}
+        <div className="flex gap-2">
+          <input
+            name="exit_price"
+            value={partialCloses[0].exit_price}
+            onChange={(e) => handlePartialChange(0, e)}
+            placeholder={t("exit")}
+            className="border p-2 rounded"
+          />
+          <input
+            name="fees"
+            value={partialCloses[0].fees}
+            onChange={(e) => handlePartialChange(0, e)}
+            placeholder={t("fees")}
+            className="border p-2 rounded"
+          />
           <input
             name="timestamp"
             type="datetime-local"
-            value={partialCloses[0]?.timestamp ?? ''}
+            value={partialCloses[0].timestamp}
             onChange={(e) => handlePartialChange(0, e)}
             className="border p-2 rounded"
           />
         </div>
       )}
 
-
       {/* Multiple close mode */}
       {!useSingleClose && (
-        <div className="flex flex-col gap-3">
+        <>
           <h3 className="text-sm text-gray-400">{t("partialCloses")}</h3>
-
           {partialCloses.map((pc, index) => (
-            <div key={index} className="flex flex-col gap-2">
-
-              {/* Row 1 */}
-              <div className="flex gap-2 items-center">
-                <input
-                  name="exit_price"
-                  value={pc.exit_price}
-                  onChange={(e) => handlePartialChange(index, e)}
-                  placeholder={t("exit")}
-                  className="border p-2 rounded"
-                />
-                <input
-                  name="closed_quantity"
-                  value={pc.closed_quantity}
-                  onChange={(e) => handlePartialChange(index, e)}
-                  placeholder={t("closedQuantity")}
-                  className="border p-2 rounded"
-                />
-
-                {/* Fees stays here only if NOT compact */}
-                {!compactMode && (
-                  <input
-                    name="fees"
-                    value={pc.fees}
-                    onChange={(e) => handlePartialChange(index, e)}
-                    placeholder={t("fees")}
-                    className="border p-2 rounded"
-                  />
-                )}
-
-                {/* Timestamp stays here only if NOT compact */}
-                {!compactMode && (
-                  <div>
-                  <input
-                    name="timestamp"
-                    type="datetime-local"
-                    value={pc.timestamp}
-                    onChange={(e) => handlePartialChange(index, e)}
-                    className="border p-2 rounded"
-                  />
-                    <button
-                    type="button"
-                    onClick={() => removePartialClose(index)}
-                    className="text-red-500 border p-2 rounded border-green-500"
-                  >
-                    <Icon icon="pixelarticons:close-box" />
-                  </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Row 2 (compact mode only) */}
-              {compactMode && (
-                <div className="flex gap-2">
-                  <input
-                    name="fees"
-                    value={pc.fees}
-                    onChange={(e) => handlePartialChange(index, e)}
-                    placeholder={t("fees")}
-                    className="border p-2 rounded"
-                  />
-                  <input
-                    name="timestamp"
-                    type="datetime-local"
-                    value={pc.timestamp}
-                    onChange={(e) => handlePartialChange(index, e)}
-                    className="border p-2 rounded max-w-41"
-                  />
-                {partialCloses.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removePartialClose(index)}
-                    className="text-red-500 border p-2 rounded border-green-500"
-                  >
-                    <Icon icon="pixelarticons:close-box" />
-                  </button>
-                )}
-                </div>
-              )}
+            <div key={index} className="flex gap-2 items-center">
+              <input
+                name="exit_price"
+                value={pc.exit_price}
+                onChange={(e) => handlePartialChange(index, e)}
+                placeholder={t("exit")}
+                className="border p-2 rounded"
+              />
+              <input
+                name="closed_quantity"
+                value={pc.closed_quantity}
+                onChange={(e) => handlePartialChange(index, e)}
+                placeholder={t("closedQuantity")}
+                className="border p-2 rounded"
+              />
+              <input
+                name="fees"
+                value={pc.fees}
+                onChange={(e) => handlePartialChange(index, e)}
+                placeholder={t("fees")}
+                className="border p-2 rounded"
+              />
+              <input
+                name="timestamp"
+                type="datetime-local"
+                value={pc.timestamp}
+                onChange={(e) => handlePartialChange(index, e)}
+                className="border p-2 rounded"
+              />
+              <button
+                type="button"
+                onClick={() => removePartialClose(index)}
+                className="text-red-500 border p-2 rounded border-green-500"
+              >
+                <Icon icon="pixelarticons:close-box"/>
+              </button>
             </div>
           ))}
-
           <button
             type="button"
             onClick={addPartialClose}
             className="border p-2 text-green-500 bg-black/50 hover:border-green-300 transition rounded"
           >
-            {t("addPartialClose")}
+            + {t("addPartialClose")}
           </button>
-        </div>
+        </>
       )}
-
       <FileUpload onFileSelect={(selectedFile) => setFile(selectedFile)} />
       {/* Validation message above submit */}
       {validationMsg && (
@@ -360,4 +307,4 @@ const TradeForm2: React.FC<TradeForm2Props> = ({ onAdd, compactMode }) => {
   );
 };
 
-export default TradeForm2;
+export default TradeForm;

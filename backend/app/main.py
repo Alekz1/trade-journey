@@ -5,6 +5,8 @@ from fastapi import UploadFile, File, Form, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+
+from .parser import detect_and_parse, parse_balance_history_csv, parse_order_history_csv
 from .auth import router
 from typing import List, Optional
 from .dependencies import get_current_user
@@ -92,6 +94,51 @@ async def add_trade_with_image(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/trades/import-csv")
+async def import_csv(
+    file: UploadFile = File(...),
+    csv_type: str = Form("auto"),   # "auto" | "order" | "balance"
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    if not file.filename.endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only CSV files are allowed")
+
+    try:
+        content  = await file.read()
+        csv_text = content.decode("utf-8-sig")
+
+        # Route to the correct parser based on csv_type sent by the frontend.
+        # "auto" uses header-based detection, same logic as the frontend badge.
+        if csv_type == "balance":
+            trades = parse_balance_history_csv(csv_text)
+            trades_data = [t.to_dict() for t in trades]
+            parser_used = "Balance History"
+        elif csv_type == "order":
+            trades = parse_order_history_csv(csv_text)
+            trades_data = [t.to_dict() for t in trades]
+            parser_used = "Order History"
+        else:
+            trades_data = detect_and_parse(csv_text)   # auto-detects internally
+            parser_used = "auto-detected"
+
+        if not trades_data:
+            return {"message": "No fully-closed trades found in file"}
+
+        num_imported = crud.bulk_import_trades(db, trades_data, user.uid)
+        return {
+            "message": (
+                f"Successfully imported {num_imported} trades "
+                f"({parser_used})"
+            )
+        }
+
+    except ValueError as e:
+        # Raised by detect_csv_type when file format is unrecognised
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        print(f"Import Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/trades/", response_model=list[schemas.Trade])
 def list_trades(

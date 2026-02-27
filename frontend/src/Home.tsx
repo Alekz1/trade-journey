@@ -19,6 +19,7 @@ import { TimezoneSelector } from "./components/TimezoneSelect";
 import { ClockWithTimezone } from "./components/ClockWithTimezone";
 import { LanguageSelector } from "./components/LanguageSelector";
 import { useTranslation } from "react-i18next";
+import TradeForm2 from "./components/TradeForm2";
 
 // 🧠 Define types for trade and stats
 type Trade = {
@@ -32,6 +33,23 @@ type Trade = {
   quantity: number;
   fees: number | string;
 };
+
+interface FTrade {
+  symbol: string;
+  side: "buy" | "sell";
+  entry_price: number;
+  quantity: number;
+  pnl: number | null;
+  timestamp: string | null;
+  partial_closes: {
+    exit_price: number;
+    closed_quantity: number;
+    fees: number | null;
+    timestamp: string | null;
+    pnl: number | null;
+  }[];
+  file: File | null
+}
 
 type Filters = {
   symbol: string;
@@ -160,10 +178,7 @@ const Home: React.FC = () => {
     
   };
 
-  const addTrade = async (trade: Trade) => {
-    if (trade.fees === "") {
-      trade.fees = 0;
-    }
+  const addTrade = async (trade: FTrade) => {
     try {
       const res = await api.post<Trade>("/trades/", trade);
       setTrades([...trades, res.data]);
@@ -226,8 +241,8 @@ const Home: React.FC = () => {
           </div>
           <div className="flex w-full justify-between px-5 pt-5">
             <div className="flex flex-col w-full gap-2 pr-10">
-              <div className="flex place-items-stretch gap-3 text-2xl h-full"/*PnL and Winrate display + Refresh button*/>
-                <div className="border w-1/2">
+              <div className="flex place-items-stretch gap-3 text-2xl h-full max-h-75"/*PnL and Winrate display + Refresh button*/>
+                <div className="border w-1/2 ">
                   <TradePnL userPnl={userStats.total_pnl}/>
                   <div className="w-full z-100 px-5 pl-7">
                     <TradeLineChart trades={allTrades} />
@@ -254,9 +269,9 @@ const Home: React.FC = () => {
                   {t('refreshstats')}
               </button>
             </div>
-            <div className="flex flex-col w-100 items-center mx-7"/*New Trade Form*/>
+            <div className="flex flex-col items-center mx-7"/*New Trade Form*/>
               <p className="text-green-dark text-4xl">{t('quickadd')}</p>
-              <TradeForm onAdd={addTrade} />
+              <TradeForm2 onAdd={addTrade} compactMode={true} />
             </div>
           </div> 
           

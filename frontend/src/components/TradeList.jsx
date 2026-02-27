@@ -105,7 +105,7 @@ const TradeList = ({ trades, filters, onFilterChange, onApplyFilters, loading, e
                     <td className="p-2 border">{trade.symbol}</td>
                     <td
                       className={`p-2 border border-green-600 font-semibold ${
-                        trade.side.toLowerCase() === "buy"
+                        trade.side.toLowerCase() === "buy" || trade.side.toLowerCase() === "long" 
                           ? "text-green-600"
                           : "text-red-600"
                       }`}
