@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, To } from "react-router-dom";
+import { useNavigate, To, redirect } from "react-router-dom";
 import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
 import api from "./services/api";
 import { auth } from "./services/firebase";
@@ -19,35 +19,7 @@ import { ClockWithTimezone } from "./components/ClockWithTimezone";
 import { LanguageSelector } from "./components/LanguageSelector";
 import { useTranslation } from "react-i18next";
 import TradeForm2 from "./components/TradeForm2";
-
-type Trade = {
-  id?: number;
-  symbol: string;
-  side: string;
-  timestamp: string;
-  pnl: number;
-  entry_price: number;
-  exit_price: number;
-  quantity: number;
-  fees: number | string;
-};
-
-interface FTrade {
-  symbol: string;
-  side: "buy" | "sell";
-  entry_price: number;
-  quantity: number;
-  pnl: number | null;
-  timestamp: string | null;
-  partial_closes: {
-    exit_price: number;
-    closed_quantity: number;
-    fees: number | null;
-    timestamp: string | null;
-    pnl: number | null;
-  }[];
-  file: File | null;
-}
+import { FTrade, Trade } from "./services/utils";
 
 type Filters = {
   symbol: string;
@@ -192,7 +164,7 @@ const Home: React.FC = () => {
 
       {/* ── Fixed Header ──────────────────────────────────────────────── */}
       <header className="fixed top-0 inset-x-0 h-16 border-b border-green-900/60 z-50 bg-black flex items-center justify-between px-3">
-        <h1 className="text-xl sm:text-2xl text-green-dark font-workbech px-1">TradeJourney</h1>
+        <h1 className="text-xl sm:text-2xl text-green-dark font-workbech px-1" onClick={() => navigate("/")}>TradeJourney</h1>
         <div className="flex items-center gap-1 sm:gap-2 overflow-hidden">
           <div className="hidden sm:block"><ClockWithTimezone timezone={selectedTz} /></div>
           <TimezoneSelector selectedTz={selectedTz} onChange={handleTimezoneChange} />

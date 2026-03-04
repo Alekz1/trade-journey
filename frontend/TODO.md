@@ -1,6 +1,5 @@
 TODO
 Bugs & Issues
-- Fix the Trading Form ‼️
 - Fix the landing page layout on mobile devices. 🔥 
 - Correct the trade form layout so it uses the full width on the trade page.
 
@@ -14,8 +13,9 @@ New Features
 
 Improvements
 - Improve overall site readability and visual hierarchy. 🔥 
+- Add more sorting to trade list: By Time; By PnL; By Quantity;
 - Improve graph styling to better match the rest of the site. 
-- Rename trade sides for clarity: Buy → Long, Sell → Short. 
+- Rename trade sides for clarity: Buy → Long, Sell → Short. [Partially Done-Supports both]
 - Expand the CSV importer/parser to support additional data sources. 💤
 
 

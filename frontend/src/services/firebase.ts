@@ -1,16 +1,19 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, FirebaseOptions } from "firebase/app";
 import { 
   getAuth, 
   GoogleAuthProvider, 
   signInWithPopup,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signOut 
+  signOut,
+  Auth
 } from "firebase/auth";
-import firebaseConfig from "./firebase-config.json";
+import firebaseConfigJson from "./firebase-config.json";
+
+const firebaseConfig = firebaseConfigJson as FirebaseOptions;
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+const auth: Auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
 export {

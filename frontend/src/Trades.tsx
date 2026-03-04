@@ -13,22 +13,7 @@ import { ClockWithTimezone } from "./components/ClockWithTimezone";
 import { LanguageSelector } from "./components/LanguageSelector";
 import { useTranslation } from "react-i18next";
 import TradeForm2 from "./components/TradeForm2";
-
-type Trade = {
-  id?: number;
-  symbol: string;
-  side: string;
-  pnl: number | null;
-  entry_price: number;
-  quantity: number;
-  partial_closes: {
-    exit_price: number;
-    closed_quantity: number;
-    fees: number | null;
-    timestamp: string | null;
-  }[];
-  file: File | null;
-};
+import { FTrade, Trade } from "./services/utils";
 
 type Filters = {
   symbol: string;
@@ -135,7 +120,7 @@ const Trades: React.FC = () => {
     onAuthStateChanged(auth, (currentUser) => setUser(currentUser || null));
   }, []);
 
-  const addTrade = async (trade: Trade) => {
+  const addTrade = async (trade: FTrade) => {
     try {
       const fd = new FormData();
       fd.append("symbol", trade.symbol);

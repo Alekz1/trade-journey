@@ -22,8 +22,8 @@ export const TimezoneSelector: React.FC<TimezoneSelectorProps> = ({ selectedTz, 
     <select
       value={selectedTz}
       onChange={(e) => onChange(e.target.value)}
-      className="border border-green-600/60 text-green-600 bg-black px-2 py-1.5 text-sm
-                 focus:outline-none focus:ring-1 focus:ring-green-500 rounded
+      className="border border-green-600/60 text-green-600 bg-black px-2 py-2 text-sm
+                 focus:outline-none focus:ring-1 focus:ring-green-500 
                  max-w-[90px] sm:max-w-[140px] md:max-w-none"
       title="Timezone"
     >
