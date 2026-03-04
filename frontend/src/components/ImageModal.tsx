@@ -1,6 +1,7 @@
 import { useState, FC, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@iconify/react";
+const API_URL = import.meta.env.VITE_API_URL;
 
 interface ImageModalProps {
   imageSrc: string;
@@ -65,7 +66,7 @@ const ImageModal: FC<ImageModalProps> = ({
 
           {/* Image — stop propagation so clicking the image doesn't close */}
           <img
-            src={`/fetch-image/${imageSrc}`}
+            src={`${API_URL}/fetch-image/${imageSrc}`}
             alt={altText}
             className="max-w-[90vw] max-h-[85vh] object-contain border border-green-900/60"
             onClick={(e) => e.stopPropagation()}
