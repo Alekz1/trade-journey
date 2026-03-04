@@ -9,6 +9,8 @@ import {
 import { onAuthStateChanged } from "firebase/auth";
 import { useTranslation } from "react-i18next";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,7 +40,7 @@ function AuthPage() {
 
   // Send token to backend
   const sendTokenToBackend = async (token) => {
-    const response = await fetch("http://localhost:8000/auth/firebase", {
+    const response = await fetch(`${API_URL}/auth/firebase`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
