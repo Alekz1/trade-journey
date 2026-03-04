@@ -163,10 +163,18 @@ const Home: React.FC = () => {
 
   const addTrade = async (trade: FTrade) => {
     try {
-      const res = await api.post<Trade>("/trades/", trade);
-      setTrades([...trades, res.data]);
+      const fd = new FormData();
+      fd.append("symbol", trade.symbol);
+      fd.append("side", trade.side);
+      fd.append("entry_price", String(trade.entry_price));
+      fd.append("quantity", String(trade.quantity));
+      fd.append("partial_closes", JSON.stringify(trade.partial_closes));
+      if (trade.file) fd.append("file", trade.file);
+      const res = await api.post<Trade>("/trades/", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setTrades((prev) => [...prev, res.data]);
       await fullrefresh();
-      setShowQuickAdd(false);
     } catch (err: any) {
       if (err.response?.status === 401) setError(t("unauthorized"));
       else setError(t("addtradeerror"));
