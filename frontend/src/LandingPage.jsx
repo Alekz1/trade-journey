@@ -10,13 +10,7 @@ const LandingPage = () => {
     useEffect(() => {
         const token = localStorage.getItem("token");
         setIsLoggedIn(!!token);
-        const script = document.createElement("script");
-        script.type = "module";
-        script.src = "/src/services/home3d.js";
-        document.body.appendChild(script);
-        return () => {
-            document.body.removeChild(script);
-        };
+        import("./services/home3d")
     }, []);
 
     const { t } = useTranslation()
