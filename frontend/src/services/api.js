@@ -2,12 +2,15 @@ import axios from "axios";
 import { auth } from "./firebase";
 import * as jwtDecode from "jwt-decode";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
+
 const api = axios.create({
-  baseURL: "http://localhost:8000",
+  baseURL: API_URL,
 });
 
 const authApi = axios.create({
-  baseURL: "http://localhost:8000",
+  baseURL: API_URL,
 }); // used only for refresh, no interceptors
 
 let isRefreshing = false;
