@@ -11,6 +11,11 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { format } from 'date-fns';
+import {
+  ScriptableLineSegmentContext,
+  ChartData,
+  ChartDataset
+} from 'chart.js';
 
 ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Filler);
 
@@ -42,6 +47,12 @@ export const WinrateLineChart: React.FC<WinrateLineChartProps> = ({ trades }) =>
   const lastWinrate = winrateData[winrateData.length - 1] ?? 0;
   const lineColor = lastWinrate >= 50 ? '#00920F' : '#f59e0b';
   const fillColor = lastWinrate >= 50 ? 'rgba(0,146,15,0.1)' : 'rgba(245,158,11,0.1)';
+  const filteredWinrateData = winrateData.map(v => (v === 0 ? null : v));
+
+  type LineSegmentCtx = {
+    p0: { parsed: { y: number } };
+    p1: { parsed: { y: number } };
+  };
 
   const data = {
     labels,
@@ -49,16 +60,34 @@ export const WinrateLineChart: React.FC<WinrateLineChartProps> = ({ trades }) =>
       {
         label: 'Win Rate',
         data: winrateData,
-        borderColor: lineColor,
-        backgroundColor: fillColor,
         fill: true,
         tension: 0.4,
         pointRadius: 0,
         pointHoverRadius: 3,
         borderWidth: 1.5,
-      },
-    ],
+
+        segment: {
+          borderColor: (ctx: ScriptableLineSegmentContext) => {
+            const y = ctx.p1.parsed.y ?? 0;
+
+            if (y < 50) return '#dc2626';        // red
+            if (y < 55) return '#facc15';        // yellow
+            return '#16a34a';                    // green
+          },
+
+          backgroundColor: (ctx: ScriptableLineSegmentContext) => {
+            const y = ctx.p1.parsed.y ?? 0;
+
+            if (y < 50) return 'rgba(220,38,38,0.1)';
+            if (y < 55) return 'rgba(250,204,21,0.1)';
+            return 'rgba(22,163,74,0.1)';
+          }
+        }
+
+      }
+    ]
   };
+
 
   const options: ChartOptions<'line'> = {
     responsive: true,
@@ -96,7 +125,7 @@ export const WinrateLineChart: React.FC<WinrateLineChartProps> = ({ trades }) =>
       },
     },
     animation: { duration: 300 },
-  };
+  }; 
 
   if (!sorted.length) {
     return (

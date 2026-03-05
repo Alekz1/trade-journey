@@ -22,7 +22,7 @@ const Winrate: React.FC<WinrateProps> = ({ winrate, previousWinrate }) => {
   //    40–59 % → amber  (neutral)
   //    < 40 %  → red    (poor)
   const valueCls =
-    value >= 60 ? "text-green-500" :
+    value >= 55 ? "text-green-500" :
     value >= 40 ? "text-yellow-500" :
     value >  0  ? "text-red-500"   :
                   "text-green-900";
@@ -45,13 +45,13 @@ const Winrate: React.FC<WinrateProps> = ({ winrate, previousWinrate }) => {
 
   // Quality label
   const qualityLabel =
-    value >= 60 ? "GOOD" :
+    value >= 55 ? "GOOD" :
     value >= 40 ? "NEUTRAL" :
     value >  0  ? "NEEDS WORK" :
                   "—";
 
   const qualityCls =
-    value >= 60 ? "text-green-800 border-green-900/40" :
+    value >= 55 ? "text-green-800 border-green-900/40" :
     value >= 40 ? "text-yellow-800 border-yellow-900/40" :
     value >  0  ? "text-red-900 border-red-900/40" :
                   "text-green-950 border-green-950";

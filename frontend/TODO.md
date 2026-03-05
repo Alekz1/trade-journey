@@ -13,7 +13,8 @@ New Features
 
 Improvements
 - Improve overall site readability and visual hierarchy. 🔥 
-- Add more sorting to trade list: By Time; By PnL; By Quantity;
+- Add more sorting to trade list: By Time; By PnL; By Quantity; [Partially Done - Poorly]
+- Add Timezone selector for the CSV Importer
 - Improve graph styling to better match the rest of the site. 
 - Rename trade sides for clarity: Buy → Long, Sell → Short. [Partially Done-Supports both]
 - Expand the CSV importer/parser to support additional data sources. 💤

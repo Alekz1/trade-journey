@@ -31,6 +31,7 @@ export const TradeLineChart: React.FC<TradeLineChartProps> = ({ trades }) => {
   let cumulative = 0;
   const labels: string[] = [];
   const pnlData: number[] = [];
+  const minPnl = Math.min(...pnlData);
 
   sortedTrades.forEach((trade) => {
     cumulative += trade.pnl;
@@ -83,6 +84,7 @@ export const TradeLineChart: React.FC<TradeLineChartProps> = ({ trades }) => {
       y: {
         display: true,
         beginAtZero: false,
+        suggestedMin: minPnl,     // prevents huge negative scaling
         grid: { color: 'rgba(0,146,15,0.08)' },
         ticks: {
           color: '#00920F',
@@ -92,6 +94,7 @@ export const TradeLineChart: React.FC<TradeLineChartProps> = ({ trades }) => {
         },
         border: { display: false },
       },
+
     },
     animation: { duration: 300 },
   };
