@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, To } from "react-router-dom";
-import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import api from "./services/api";
-import { auth } from "./services/firebase";
 import { Icon } from "@iconify/react";
 
 import TradeList from "./components/TradeList";
@@ -17,353 +16,262 @@ import { WinrateLineChart } from "./components/WinrateLineChart";
 import { TimezoneSelector } from "./components/TimezoneSelect";
 import { ClockWithTimezone } from "./components/ClockWithTimezone";
 import { LanguageSelector } from "./components/LanguageSelector";
+import JournalSelector, { Journal } from "./components/JournalSelector";
+
 import { useTranslation } from "react-i18next";
-import TradeForm2 from "./components/TradeForm2";
-
-type Trade = {
-  id?: number;
-  symbol: string;
-  side: string;
-  timestamp: string;
-  pnl: number;
-  entry_price: number;
-  exit_price: number;
-  quantity: number;
-  fees: number | string;
-};
-
-interface FTrade {
-  symbol: string;
-  side: "buy" | "sell";
-  entry_price: number;
-  quantity: number;
-  pnl: number | null;
-  timestamp: string | null;
-  partial_closes: {
-    exit_price: number;
-    closed_quantity: number;
-    fees: number | null;
-    timestamp: string | null;
-    pnl: number | null;
-  }[];
-  file: File | null;
-}
+import { Trade } from "./services/utils";
+import PnlCalendar from "./components/PnlCalendar";
+import AveragePnlChart from "./components/AveragePnlChart";
 
 type Filters = {
-  symbol: string;
-  side: string;
-  date_from: string;
-  date_to: string;
-  limit: number;
+  symbol: string; side: string;
+  date_from: string; date_to: string; limit: number;
 };
+type UserStats = { total_pnl: number; winrate: number; sellpercent?: number; };
+type JournalStats = { total_pnl: number; winrate: number; total_trades: number; sellpercent?: number; };
 
-type UserStats = {
-  total_pnl: number;
-  winrate: number;
-  sellpercent?: number;
-};
+const TZ_KEY = "preferredTimezone";
 
 const Home: React.FC = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [error, setError] = useState("");
   const [user, setUser] = useState<User | null>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [allTrades, setAllTrades] = useState<Trade[]>([]);
   const [userStats, setUserStats] = useState<UserStats>({ total_pnl: 0, winrate: 0, sellpercent: 0 });
-  const [selectedTz, setSelectedTz] = useState<string>("Local Timezone");
-  const [showQuickAdd, setShowQuickAdd] = useState<boolean>(false);
+  const [journalStats, setJournalStats] = useState<JournalStats | null>(null);
+  const [selectedJournal, setSelectedJournal] = useState<Journal | null>(null);
+  const [selectedTz, setSelectedTz] = useState("Local Timezone");
+
+  const [loading, setLoading] = useState(false);
+  const [isJournalsLoaded, setIsJournalsLoaded] = useState(false);
   const [filters, setFilters] = useState<Filters>({
-    symbol: "",
-    side: "",
-    date_from: "",
-    date_to: "",
-    limit: 10,
+    symbol: "", side: "", date_from: "", date_to: "", limit: 10,
   });
-  const [loading, setLoading] = useState<boolean>(false);
 
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    const auth = getAuth();
-    signOut(auth).catch((err) => console.error("Firebase logout error:", err));
-    localStorage.removeItem("token");
-  };
-
-  const fetchTrades = async (activeFilters: Filters = filters) => {
+  // ── Fetchers ───────────────────────────────────────────────────────────────
+  const fetchTrades = useCallback(async (
+    f: Filters = filters,
+    journal: Journal | null = selectedJournal,
+  ) => {
+    if (!journal) return;
+    setLoading(true); setError("");
     try {
-      setLoading(true);
-      setError("");
-      const cleanedFilters = Object.fromEntries(
-        Object.entries(activeFilters).filter(
-          ([_, value]) => value !== "" && value !== null && value !== undefined
-        )
+      const params = Object.fromEntries(
+        Object.entries({ ...f, journal_id: journal.id }).filter(([, v]) => v !== "" && v != null)
       );
-      const res = await api.get<Trade[]>("/trades/", { params: cleanedFilters });
+      const res = await api.get<Trade[]>("/trades/", { params });
       setTrades(res.data);
-    } catch (err) {
-      console.error("Failed to fetch trades:", err);
+    } catch {
       setError("Failed to fetch trades");
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, selectedJournal]);
 
-  const fetchTradesUnfiltered = async () => {
+  const fetchAllTrades = useCallback(async (journal: Journal | null = selectedJournal) => {
+    if (!journal) return;
     try {
-      const res = await api.get<Trade[]>("/trades/");
+      const res = await api.get<Trade[]>("/trades/", { params: { limit: 500, journal_id: journal.id } });
       setAllTrades(res.data);
-    } catch (err) {
-      console.error("Failed to fetch trades:", err);
-    }
-  };
+    } catch { /* non-critical */ }
+  }, [selectedJournal]);
 
-  const fetchUserStats = async () => {
+  const fetchUserStats = useCallback(async () => {
     try {
       const res = await api.get<UserStats>("/users/me/stats/");
       setUserStats(res.data);
-    } catch (error) {
-      console.error("Error fetching user PnL:", error);
-    }
-  };
-
-  const refreshUserStats = async () => {
-    try {
-      const res = await api.get<UserStats>("/users/me/stats/refresh/");
-      setUserStats(res.data);
-    } catch (error) {
-      console.error("Error refreshing user PnL:", error);
-    }
-  };
-
-  const fullrefresh = async () => {
-    await fetchTrades();
-    await fetchTradesUnfiltered();
-    await refreshUserStats();
-  };
-
-  const handleTimezoneChange = (tz: string) => {
-    setSelectedTz(tz);
-    localStorage.setItem("preferredTimezone", tz);
-  };
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const storedTz = localStorage.getItem("preferredTimezone");
-    if (storedTz) setSelectedTz(storedTz);
-    else setSelectedTz("Local Timezone");
-    setIsLoggedIn(!!token);
-    if (!token) return;
-    fetchTrades();
-    fetchUserStats();
-    fetchTradesUnfiltered();
-    const auth = getAuth();
-    onAuthStateChanged(auth, (currentUser) => setUser(currentUser || null));
+    } catch { /* non-critical */ }
   }, []);
 
-  const addTrade = async (trade: FTrade) => {
+  const fetchJournalStats = useCallback(async (journal: Journal | null = selectedJournal) => {
+    if (!journal) return;
     try {
-      const fd = new FormData();
-      fd.append("symbol", trade.symbol);
-      fd.append("side", trade.side);
-      fd.append("entry_price", String(trade.entry_price));
-      fd.append("quantity", String(trade.quantity));
-      fd.append("partial_closes", JSON.stringify(trade.partial_closes));
-      if (trade.file) fd.append("file", trade.file);
-      const res = await api.post<Trade>("/trades/", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setTrades((prev) => [...prev, res.data]);
-      await fullrefresh();
-    } catch (err: any) {
-      if (err.response?.status === 401) setError(t("unauthorized"));
-      else setError(t("addtradeerror"));
-    }
+      const res = await api.get<JournalStats>(`/journals/${journal.id}/stats/`);
+      setJournalStats(res.data);
+    } catch { /* non-critical */ }
+  }, [selectedJournal]);
+
+  const fullRefresh = useCallback(async () => {
+    await Promise.all([
+      fetchTrades(),
+      fetchAllTrades(),
+      api.get<UserStats>("/users/me/stats/refresh/").then(r => setUserStats(r.data)).catch(() => { }),
+      selectedJournal
+        ? api.get<JournalStats>(`/journals/${selectedJournal.id}/stats/refresh/`).then(r => setJournalStats(r.data)).catch(() => { })
+        : Promise.resolve(),
+    ]);
+  }, [fetchTrades, fetchAllTrades, selectedJournal]);
+
+  // ── Journal change (called by JournalSelector) ────────────────────────────
+  const handleJournalChange = useCallback((journal: Journal) => {
+    setSelectedJournal(journal);
+    localStorage.setItem("selectedJournalId", String(journal.id));
+    const resetFilters: Filters = { symbol: "", side: "", date_from: "", date_to: "", limit: 10 };
+    setFilters(resetFilters);
+    fetchTrades(resetFilters, journal);
+    fetchJournalStats(journal);
+    fetchAllTrades(journal);
+  }, [fetchTrades, fetchJournalStats, fetchAllTrades]);
+
+  // ── Mount ──────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const storedTz = localStorage.getItem(TZ_KEY);
+    if (storedTz) setSelectedTz(storedTz);
+    setIsLoggedIn(!!token);
+    if (!token) return;
+    fetchAllTrades();
+    fetchUserStats();
+    const auth = getAuth();
+    onAuthStateChanged(auth, u => setUser(u ?? null));
+    // Journal is selected and trades are fetched by JournalSelector.onJournalChange
+  }, []);
+
+  // ── Misc handlers ──────────────────────────────────────────────────────────
+  const handleTimezoneChange = (tz: string) => {
+    setSelectedTz(tz);
+    localStorage.setItem(TZ_KEY, tz);
   };
 
-  const handleFilterChange = (newFilters: Partial<Filters>) => {
-    setFilters((prev) => ({ ...prev, ...newFilters }));
-  };
 
-  const handleApplyFilters = () => fetchTrades(filters);
+
+  const displayStats = journalStats ?? userStats;
+  const sellPct = displayStats.sellpercent ?? 0;
 
   return (
     <div className="font-jersey15 text-green-600 bg-black min-h-screen">
 
-      {/* ── Fixed Header ──────────────────────────────────────────────── */}
-      <header className="fixed top-0 inset-x-0 h-16 border-b border-green-900/60 z-50 bg-black flex items-center justify-between px-3">
-        <h1 className="text-xl sm:text-2xl text-green-dark font-workbech px-1">TradeJourney</h1>
-        <div className="flex items-center gap-1 sm:gap-2 overflow-hidden">
+      {/* ── Header ── */}
+      <header className="fixed top-0 inset-x-0 h-16 border-b border-green-900/60 z-50 bg-black flex items-center justify-between px-3 gap-2">
+        <h1 className="text-xl sm:text-2xl text-green-dark font-workbech px-1 cursor-pointer shrink-0" onClick={() => navigate("/")}>
+          TradeJourney
+        </h1>
+        <div className="flex items-center gap-1 sm:gap-2 overflow-hidden flex-1 justify-end">
+          {isLoggedIn && (
+            <JournalSelector
+              selectedJournalId={selectedJournal?.id ?? null}
+              onJournalChange={handleJournalChange}
+              onLoaded={() => setTimeout(() => setIsJournalsLoaded(true), 10)}
+            />
+          )}
           <div className="hidden sm:block"><ClockWithTimezone timezone={selectedTz} /></div>
           <TimezoneSelector selectedTz={selectedTz} onChange={handleTimezoneChange} />
           <LanguageSelector />
-          {!isLoggedIn && <LoginSignupButton />}
-          {isLoggedIn && <LogoutButton />}
+          {!isLoggedIn ? <LoginSignupButton /> : <LogoutButton />}
         </div>
       </header>
 
-      {/* ── Desktop Sidebar ───────────────────────────────────────────── */}
+      {/* ── Desktop Sidebar ── */}
       <aside className="hidden md:flex fixed left-0 top-16 h-[calc(100vh-4rem)] w-14 flex-col items-center border-r border-green-900/60 z-40 bg-black py-3 gap-4">
         {user?.photoURL && (
-          <img
-            src={user.photoURL}
-            className="w-9 h-9 rounded-full border border-green-800 mb-2"
-            alt="avatar"
-          />
+          <img src={user.photoURL} className="w-9 h-9 rounded-full border border-green-800 mb-2" alt="avatar" />
         )}
-        <button
-          className="text-green-600 hover:text-green-300 transition"
-          onClick={() => navigate("/home")}
-          title="Home"
-        >
-          <Icon icon="pixelarticons:home" width={36} height={36} />
+        <button className="text-green-600 hover:text-green-300 transition" onClick={() => navigate("/home")} title="Home">
+          <Icon icon="pixelarticons:home" width={36} />
         </button>
-        <button
-          className="text-green-600 hover:text-green-300 transition"
-          onClick={() => navigate("/trades")}
-          title="Trades"
-        >
-          <Icon icon="pixelarticons:chart-add" width={36} height={36} />
+        <button className="text-green-600 hover:text-green-300 transition" onClick={() => navigate("/trades")} title="Trades">
+          <Icon icon="pixelarticons:chart-add" width={36} />
         </button>
       </aside>
 
-      {/* ── Mobile Bottom Nav ─────────────────────────────────────────── */}
+      {/* ── Mobile Bottom Nav ── */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 h-16 border-t border-green-900/60 z-50 bg-black flex items-center justify-around px-6">
-        <button
-          className="flex flex-col items-center gap-0.5 text-green-600 hover:text-green-300 transition"
-          onClick={() => navigate("/home")}
-        >
-          <Icon icon="pixelarticons:home" width={28} height={28} />
-          <span className="text-xs">Home</span>
+        <button className="flex flex-col items-center gap-0.5 text-green-600 hover:text-green-300 transition" onClick={() => navigate("/home")}>
+          <Icon icon="pixelarticons:home" width={28} /><span className="text-xs">{t("home")}</span>
         </button>
 
-        <button
-          className="flex flex-col items-center gap-0.5 text-green-600 hover:text-green-300 transition"
-          onClick={() => setShowQuickAdd(!showQuickAdd)}
-        >
-          <Icon icon="pixelarticons:plus-box" width={28} height={28} />
-          <span className="text-xs">{t("addtrade")}</span>
-        </button>
-
-        <button
-          className="flex flex-col items-center gap-0.5 text-green-600 hover:text-green-300 transition"
-          onClick={() => navigate("/trades")}
-        >
-          <Icon icon="pixelarticons:chart-add" width={28} height={28} />
-          <span className="text-xs">Trades</span>
+        <button className="flex flex-col items-center gap-0.5 text-green-600 hover:text-green-300 transition" onClick={() => navigate("/trades")}>
+          <Icon icon="pixelarticons:chart-add" width={28} /><span className="text-xs">{t("trades_nav")}</span>
         </button>
       </nav>
 
-      {/* ── Main Content ──────────────────────────────────────────────── */}
+      {/* ── Main ── */}
       {isLoggedIn && (
         <main className="pt-16 md:ml-14 pb-20 md:pb-8 min-h-screen overflow-x-hidden">
           <div className="p-4 sm:p-6 lg:p-8">
 
-            {/* Welcome */}
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl text-green-dark mb-5">
-              {t("welcome")}, {user?.displayName}!
-            </h2>
+            {/* Welcome + journal badge */}
+            <div className="flex flex-wrap items-baseline gap-3 mb-5">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl text-green-dark">
+                {t("welcome")}, {user?.displayName ?? "Trader"}!
+              </h2>
+              {selectedJournal && (
+                <span className="text-sm border border-green-900/60 px-2 py-0.5 text-green-800 tracking-wide">
+                  <Icon icon="pixelarticons:notes" width={12} className="inline mr-1" />
+                  {selectedJournal.name}
+                </span>
+              )}
+            </div>
 
-            {/* Stats + Quick Add row */}
-            <div className="flex flex-col xl:flex-row gap-5">
+            {!selectedJournal && isJournalsLoaded && (
+              <div className="border border-yellow-700/40 bg-yellow-950/20 p-4 text-yellow-500 text-sm mb-5">
+                {t("no_journal_warning")}
+              </div>
+            )}
 
-              {/* Stats column */}
-              <div className="flex flex-col gap-3 flex-1 min-w-0">
-
-                {/* PnL + Winrate chart cards */}
+            <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-3">
                 <div className="flex flex-col sm:flex-row gap-3">
-
-                  {/* PnL Card */}
                   <div className="border border-green-900/60 flex-1 min-w-0 flex flex-col">
-                    <TradePnL userPnl={userStats.total_pnl} />
-                    {/* FIX: h-40 gives chart.js enough room for 6 Y-axis ticks */}
-                    <div className="h-40 px-3 pb-2">
-                      <TradeLineChart trades={allTrades} />
-                    </div>
+                    <TradePnL userPnl={displayStats.total_pnl} />
+                    <div className="h-40 px-3 pb-2"><TradeLineChart trades={allTrades} /></div>
                   </div>
-
-                  {/* Winrate Card */}
                   <div className="border border-green-900/60 flex-1 min-w-0 flex flex-col">
-                    <Winrate winrate={userStats.winrate} />
-                    {/* FIX: h-40 */}
-                    <div className="h-40 px-3 pb-2">
-                      <WinrateLineChart trades={allTrades} />
-                    </div>
+                    <Winrate winrate={displayStats.winrate} />
+                    <div className="h-40 px-3 pb-2"><WinrateLineChart trades={allTrades} /></div>
                   </div>
-
                 </div>
 
-                {/* Long/Short bar */}
                 <div className="border border-green-900/60 flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4">
                   <p className="text-green-dark text-lg whitespace-nowrap">
-                    {t("totaltrades")}: {trades.length}
+                    {t("totaltrades")}: {(displayStats as JournalStats).total_trades ?? trades.length}
                   </p>
                   <div className="w-full flex flex-col gap-1">
-                    <DualProgressBar
-                      rightPercent={userStats.sellpercent ?? 0}
-                      leftColor="bg-green-500"
-                      rightColor="bg-red-600"
-                    />
+                    <DualProgressBar rightPercent={sellPct} leftColor="bg-green-500" rightColor="bg-red-600" />
                     <div className="flex justify-between text-sm">
-                      <p className="text-green-dark">
-                        {t("buy")} %: {(100 - (userStats.sellpercent ?? 0)).toFixed(2)}%
-                      </p>
-                      <p className="text-red-600">
-                        {t("sell")} %: {userStats.sellpercent?.toFixed(2)}%
-                      </p>
+                      <p className="text-green-dark">{t("buy")} %: {(100 - sellPct).toFixed(2)}%</p>
+                      <p className="text-red-600">{t("sell")} %: {sellPct.toFixed(2)}%</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Refresh */}
                 <button
-                  className="border border-green-600/60 p-3 text-xl text-green-600 bg-black hover:border-green-300 transition rounded"
-                  onClick={refreshUserStats}
+                  className="border border-green-600/60 p-3 text-sm text-green-600 bg-black hover:border-green-300 transition flex items-center gap-2 justify-center"
+                  onClick={fullRefresh}
                 >
+                  <Icon icon="pixelarticons:refresh" width={16} />
                   {t("refreshstats")}
                 </button>
               </div>
 
-              {/* Quick Add — desktop inline, mobile as modal-ish panel */}
-              <div className="hidden md:flex flex-col items-start xl:w-80 shrink-0">
-                <p className="text-green-dark text-2xl mb-2">{t("quickadd")}</p>
-                <TradeForm2 onAdd={addTrade} compactMode={true} />
+              {/* PnL Calendar */}
+              <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-5">
+                <PnlCalendar trades={allTrades} selectedTz={selectedTz} />
+                <AveragePnlChart trades={allTrades} />
               </div>
             </div>
 
-            {/* Mobile Quick Add Panel (toggle from bottom nav) */}
-            {showQuickAdd && (
-              <div className="md:hidden mt-4 border border-green-600/60 p-4">
-                <div className="flex justify-between items-center mb-3">
-                  <p className="text-green-dark text-xl">{t("quickadd")}</p>
-                  <button
-                    className="text-green-600 hover:text-green-300"
-                    onClick={() => setShowQuickAdd(false)}
-                  >
-                    <Icon icon="pixelarticons:close" width={24} height={24} />
-                  </button>
-                </div>
-                <TradeForm2 onAdd={addTrade} compactMode={true} />
-              </div>
-            )}
 
-            {/* Trade List */}
+
             <div className="mt-5 flex flex-col gap-5">
               <TradeList
                 trades={trades}
                 filters={filters}
-                onFilterChange={handleFilterChange}
-                onApplyFilters={handleApplyFilters}
+                onFilterChange={f => setFilters(prev => ({ ...prev, ...f }))}
+                onApplyFilters={() => fetchTrades(filters)}
                 loading={loading}
                 error={error}
-                refresh={fullrefresh}
+                refresh={fullRefresh}
                 selectedTz={selectedTz}
               />
               <div className="pt-2">
-                <ImportCSV refresh={fullrefresh} />
+                <ImportCSV refresh={fullRefresh} journalId={selectedJournal?.id ?? null} />
               </div>
             </div>
-
           </div>
         </main>
       )}

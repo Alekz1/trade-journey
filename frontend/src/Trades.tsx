@@ -12,23 +12,8 @@ import { TimezoneSelector } from "./components/TimezoneSelect";
 import { ClockWithTimezone } from "./components/ClockWithTimezone";
 import { LanguageSelector } from "./components/LanguageSelector";
 import { useTranslation } from "react-i18next";
-import TradeForm2 from "./components/TradeForm2";
-
-type Trade = {
-  id?: number;
-  symbol: string;
-  side: string;
-  pnl: number | null;
-  entry_price: number;
-  quantity: number;
-  partial_closes: {
-    exit_price: number;
-    closed_quantity: number;
-    fees: number | null;
-    timestamp: string | null;
-  }[];
-  file: File | null;
-};
+import TradeForm from "./components/TradeForm";
+import { FTrade, Trade } from "./services/utils";
 
 type Filters = {
   symbol: string;
@@ -50,6 +35,7 @@ const Trades: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [allTrades, setAllTrades] = useState<Trade[]>([]);
+  const [selectedJournalId, setSelectedJournalId] = useState<number>(1);
   const [userStats, setUserStats] = useState<UserStats>({ total_pnl: 0, winrate: 0, sellpercent: 0 });
   const [selectedTz, setSelectedTz] = useState<string>("Local Timezone");
   const [filters, setFilters] = useState<Filters>({
@@ -135,7 +121,7 @@ const Trades: React.FC = () => {
     onAuthStateChanged(auth, (currentUser) => setUser(currentUser || null));
   }, []);
 
-  const addTrade = async (trade: Trade) => {
+  const addTrade = async (trade: FTrade) => {
     try {
       const fd = new FormData();
       fd.append("symbol", trade.symbol);
@@ -208,14 +194,14 @@ const Trades: React.FC = () => {
           onClick={() => navigate("/home")}
         >
           <Icon icon="pixelarticons:home" width={28} height={28} />
-          <span className="text-xs">Home</span>
+          <span className="text-xs">{t("home")}</span>
         </button>
         <button
           className="flex flex-col items-center gap-0.5 text-green-600 hover:text-green-300 transition"
           onClick={() => navigate("/trades")}
         >
           <Icon icon="pixelarticons:chart-add" width={28} height={28} />
-          <span className="text-xs">Trades</span>
+          <span className="text-xs">{t("trades_nav")}</span>
         </button>
       </nav>
 
@@ -224,27 +210,55 @@ const Trades: React.FC = () => {
         <main className="pt-16 md:ml-14 pb-20 md:pb-8 min-h-screen overflow-x-hidden">
           <div className="p-4 sm:p-6 lg:p-8">
 
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl text-green-dark mb-5">
-              {t("addtrade")}
-            </h2>
+            <div className="flex flex-col xl:flex-row gap-6 items-start">
+              {/* ── Left Column: Form ── */}
+              <div className="w-full xl:w-[480px] shrink-0">
+                <div className="border border-green-800/40 bg-black shadow-[0_0_25px_rgba(0,0,0,0.8)] relative overflow-hidden">
+                  {/* Terminal Header */}
+                  <div className="bg-green-950/60 border-b border-green-900/60 px-4 py-2.5 flex items-center justify-between">
+                    <h2 className="text-lg text-green-400 flex items-center gap-2 m-0 uppercase tracking-widest font-semibold">
+                      <Icon icon="pixelarticons:terminal" width={18} />
+                      {t("addtrade")}
+                    </h2>
+                    <div className="flex gap-1.5 opacity-70">
+                      <div className="w-3 h-3 bg-green-900/80 border border-green-900"></div>
+                      <div className="w-3 h-3 bg-green-700/80 border border-green-700"></div>
+                      <div className="w-3 h-3 bg-green-500/80 border border-green-500"></div>
+                    </div>
+                  </div>
 
-            <TradeForm2 onAdd={addTrade} />
+                  {/* Form Content */}
+                  <div className="p-4 sm:p-5">
+                    <TradeForm onAdd={addTrade} journalId={selectedJournalId} />
+                    {error && (
+                      <div className="mt-4 border border-red-900/60 bg-red-950/30 p-3 flex items-start gap-2">
+                        <Icon icon="pixelarticons:alert" className="text-red-500 shrink-0 mt-0.5" width={16} />
+                        <p className="text-red-400 text-sm">{error}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
 
-            {error && <p className="text-red-600 my-4">{error}</p>}
+              {/* ── Right Column: Lists & Data ── */}
+              <div className="w-full flex-1 min-w-0 flex flex-col gap-6">
+                <TradeList
+                  trades={trades}
+                  filters={filters}
+                  onFilterChange={handleFilterChange}
+                  onApplyFilters={handleApplyFilters}
+                  loading={loading}
+                  error={error}
+                  refresh={fullrefresh}
+                  selectedTz={selectedTz}
+                />
 
-            <div className="flex flex-col gap-5 mt-4">
-              <TradeList
-                trades={trades}
-                filters={filters}
-                onFilterChange={handleFilterChange}
-                onApplyFilters={handleApplyFilters}
-                loading={loading}
-                error={error}
-                refresh={fullrefresh}
-                selectedTz={selectedTz}
-              />
-              <div className="pt-2">
-                <ImportCSV refresh={fullrefresh} />
+                <div className="border border-green-900/40 bg-black p-4 relative overflow-hidden">
+                  <span className="absolute -top-3 left-4 bg-black px-2 text-[10px] text-green-700 tracking-widest uppercase">
+                    DATA IMPORT
+                  </span>
+                  <ImportCSV refresh={fullrefresh} journalId={selectedJournalId} />
+                </div>
               </div>
             </div>
 
