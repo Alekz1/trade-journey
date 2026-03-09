@@ -17,9 +17,11 @@ import { TimezoneSelector } from "./components/TimezoneSelect";
 import { ClockWithTimezone } from "./components/ClockWithTimezone";
 import { LanguageSelector } from "./components/LanguageSelector";
 import JournalSelector, { Journal } from "./components/JournalSelector";
-import TradeForm2 from "./components/TradeForm2";
+
 import { useTranslation } from "react-i18next";
-import { FTrade, Trade } from "./services/utils";
+import { Trade } from "./services/utils";
+import PnlCalendar from "./components/PnlCalendar";
+import AveragePnlChart from "./components/AveragePnlChart";
 
 type Filters = {
   symbol: string; side: string;
@@ -40,7 +42,7 @@ const Home: React.FC = () => {
   const [journalStats, setJournalStats] = useState<JournalStats | null>(null);
   const [selectedJournal, setSelectedJournal] = useState<Journal | null>(null);
   const [selectedTz, setSelectedTz] = useState("Local Timezone");
-  const [showQuickAdd, setShowQuickAdd] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [isJournalsLoaded, setIsJournalsLoaded] = useState(false);
   const [filters, setFilters] = useState<Filters>({
@@ -135,27 +137,7 @@ const Home: React.FC = () => {
     localStorage.setItem(TZ_KEY, tz);
   };
 
-  const addTrade = async (trade: FTrade) => {
-    if (!selectedJournal) { setError("Select a journal first"); return; }
-    try {
-      const fd = new FormData();
-      fd.append("symbol", trade.symbol);
-      fd.append("side", trade.side);
-      fd.append("entry_price", String(trade.entry_price));
-      fd.append("quantity", String(trade.quantity));
-      fd.append("jid", String(selectedJournal.id));
-      fd.append("partial_closes", JSON.stringify(trade.partial_closes));
-      if (trade.file) fd.append("file", trade.file);
-      const res = await api.post<Trade>("/trades/", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setTrades(prev => [...prev, res.data]);
-      await fullRefresh();
-    } catch (err: unknown) {
-      const status = (err as { response?: { status: number } })?.response?.status;
-      setError(status === 401 ? t("unauthorized") : t("addtradeerror"));
-    }
-  };
+
 
   const displayStats = journalStats ?? userStats;
   const sellPct = displayStats.sellpercent ?? 0;
@@ -201,9 +183,7 @@ const Home: React.FC = () => {
         <button className="flex flex-col items-center gap-0.5 text-green-600 hover:text-green-300 transition" onClick={() => navigate("/home")}>
           <Icon icon="pixelarticons:home" width={28} /><span className="text-xs">{t("home")}</span>
         </button>
-        <button className="flex flex-col items-center gap-0.5 text-green-600 hover:text-green-300 transition" onClick={() => setShowQuickAdd(v => !v)}>
-          <Icon icon="pixelarticons:plus-box" width={28} /><span className="text-xs">{t("addtrade")}</span>
-        </button>
+
         <button className="flex flex-col items-center gap-0.5 text-green-600 hover:text-green-300 transition" onClick={() => navigate("/trades")}>
           <Icon icon="pixelarticons:chart-add" width={28} /><span className="text-xs">{t("trades_nav")}</span>
         </button>
@@ -233,9 +213,8 @@ const Home: React.FC = () => {
               </div>
             )}
 
-            <div className="flex flex-col xl:flex-row gap-5">
-              <div className="flex flex-col gap-3 flex-1 min-w-0">
-
+            <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-3">
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="border border-green-900/60 flex-1 min-w-0 flex flex-col">
                     <TradePnL userPnl={displayStats.total_pnl} />
@@ -269,27 +248,14 @@ const Home: React.FC = () => {
                 </button>
               </div>
 
-              <div className="hidden md:flex flex-col items-start xl:w-80 shrink-0">
-                <p className="text-green-dark text-2xl mb-2">{t("quickadd")}</p>
-                {selectedJournal
-                  ? <TradeForm2 onAdd={addTrade} compactMode journalId={selectedJournal.id} />
-                  : <p className="text-xs text-green-900">{t("select_journal_first")}</p>}
+              {/* PnL Calendar */}
+              <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-5">
+                <PnlCalendar trades={allTrades} selectedTz={selectedTz} />
+                <AveragePnlChart trades={allTrades} />
               </div>
             </div>
 
-            {showQuickAdd && (
-              <div className="md:hidden mt-4 border border-green-600/60 p-4">
-                <div className="flex justify-between items-center mb-3">
-                  <p className="text-green-dark text-xl">{t("quickadd")}</p>
-                  <button className="text-green-600 hover:text-green-300" onClick={() => setShowQuickAdd(false)}>
-                    <Icon icon="pixelarticons:close" width={24} />
-                  </button>
-                </div>
-                {selectedJournal
-                  ? <TradeForm2 onAdd={addTrade} compactMode journalId={selectedJournal.id} />
-                  : <p className="text-xs text-yellow-600">{t("select_journal_first")}</p>}
-              </div>
-            )}
+
 
             <div className="mt-5 flex flex-col gap-5">
               <TradeList
