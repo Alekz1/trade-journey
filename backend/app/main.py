@@ -181,10 +181,18 @@ async def import_csv(
             parser_used = "auto-detected"
 
         if not trades_data:
-            return {"message": "No fully-closed trades found in file"}
+            return {"message": "No fully-closed trades found in file", "imported": 0, "skipped": 0}
 
-        num_imported = crud.bulk_import_trades(db, trades_data, user.uid, journal_id)
-        return {"message": f"Successfully imported {num_imported} trades ({parser_used})"}
+        result   = crud.bulk_import_trades(db, trades_data, user.uid, journal_id)
+        imported = result["imported"]
+        skipped  = result["skipped"]
+
+        msg = f"Imported {imported} trade{'s' if imported != 1 else ''}"
+        if skipped:
+            msg += f", skipped {skipped} duplicate{'s' if skipped != 1 else ''}"
+        msg += f" ({parser_used})"
+
+        return {"message": msg, "imported": imported, "skipped": skipped}
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:

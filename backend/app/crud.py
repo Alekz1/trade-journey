@@ -100,6 +100,8 @@ def create_trade(db: Session, trade: schemas.TradeCreate, user_id: str):
         entry_price=entry_price, quantity=quantity,
         pnl=Decimal(0), timestamp=timestamp,
         image_url=trade.image_url, owner_id=user_id, jid=trade.jid,
+        message=trade.message,  # new: free-text note
+        tags=trade.tags,        # new: list of tag strings (stored as JSON)
     )
     db.add(db_trade)
     db.commit()
@@ -182,25 +184,99 @@ def delete_trade(db: Session, trade_id: int, user_id: str):
 
 
 # -----------------------------
-# Bulk CSV Import
+# Bulk CSV Import  (with duplicate detection)
 # -----------------------------
 
-def bulk_import_trades(db: Session, trades_list: list, user_id: str, journal_id: int) -> int:
+def _make_fingerprint(symbol: str, side: str, entry_price, quantity, timestamp) -> tuple:
+    """
+    Deterministic identity key for a trade row used to detect duplicates.
+
+    - entry_price / quantity are rounded to 8 dp to absorb float <-> Decimal noise
+      that naturally occurs between the CSV parser and the DB round-trip.
+    - timestamp is truncated to the second because TradingView exports carry no
+      sub-second precision, so microseconds from DB storage would cause false misses.
+    """
+    ep = round(float(entry_price), 8)
+    qt = round(float(quantity),    8)
+    ts = timestamp.replace(microsecond=0) if hasattr(timestamp, "replace") else timestamp
+    return (symbol.upper(), side.lower(), ep, qt, ts)
+
+
+def bulk_import_trades(
+    db: Session,
+    trades_list: list,
+    user_id: str,
+    journal_id: int,
+) -> dict:
+    """
+    Insert trades produced by the CSV parsers, skipping exact duplicates.
+
+    Duplicate detection strategy
+    ----------------------------
+    One single query fetches all existing (symbol, side, entry_price, quantity,
+    timestamp) tuples for the target (user, journal) and hashes them into a set —
+    O(existing) lookup cost, not O(existing × incoming).
+
+    A trade from the CSV is skipped when its fingerprint matches:
+      • anything already in the DB for this journal, OR
+      • anything already inserted earlier in this same batch
+        (handles re-uploading the same file twice without refreshing).
+
+    Returns
+    -------
+    {"imported": int, "skipped": int}
+    """
     journal = get_journal(db, journal_id, user_id)
     if not journal:
         raise ValueError(f"Journal {journal_id} not found or access denied")
 
-    count = 0
+    # Fetch fingerprints of all trades already in this journal
+    existing_rows = (
+        db.query(
+            models.Trade.symbol,
+            models.Trade.side,
+            models.Trade.entry_price,
+            models.Trade.quantity,
+            models.Trade.timestamp,
+        )
+        .filter(
+            models.Trade.owner_id == user_id,
+            models.Trade.jid == journal_id,
+        )
+        .all()
+    )
+    existing_fps: set = {
+        _make_fingerprint(r.symbol, r.side, r.entry_price, r.quantity, r.timestamp)
+        for r in existing_rows
+    }
+
+    imported  = 0
+    skipped   = 0
+    batch_fps: set = set()  # dedup within the incoming batch itself
+
     for t in trades_list:
+        entry_price = Decimal(str(t["entry_price"]))
+        quantity    = Decimal(str(t["quantity"]))
+        side        = t["side"].lower()
+        ts          = t["timestamp"]  # already a datetime from the parser
+
+        fp = _make_fingerprint(t["symbol"], side, entry_price, quantity, ts)
+
+        if fp in existing_fps or fp in batch_fps:
+            skipped += 1
+            continue
+
+        batch_fps.add(fp)
+
         db_trade = models.Trade(
-            symbol=t["symbol"], side=t["side"].lower(),
-            entry_price=Decimal(str(t["entry_price"])),
-            quantity=Decimal(str(t["quantity"])),
-            pnl=Decimal("0"), timestamp=t["timestamp"],
+            symbol=t["symbol"], side=side,
+            entry_price=entry_price, quantity=quantity,
+            pnl=Decimal("0"), timestamp=ts,
             owner_id=user_id, image_url=None, jid=journal_id,
+            message=None, tags=None,
         )
         db.add(db_trade)
-        db.flush()
+        db.flush()  # get id before commit
 
         total_pnl = Decimal("0")
         for pc in t["partial_closes"]:
@@ -215,12 +291,15 @@ def bulk_import_trades(db: Session, trades_list: list, user_id: str, journal_id:
             total_pnl += pnl
 
         db_trade.pnl = total_pnl
-        count += 1
+        imported += 1
 
     db.commit()
-    update_user_trade_summary(db, user_id)
-    update_journal_trade_summary(db, journal_id)
-    return count
+
+    if imported > 0:
+        update_user_trade_summary(db, user_id)
+        update_journal_trade_summary(db, journal_id)
+
+    return {"imported": imported, "skipped": skipped}
 
 
 # -----------------------------
@@ -247,7 +326,6 @@ def update_user_trade_summary(db: Session, user_id: str):
     wins         = db.query(func.count(models.Trade.id)).filter(models.Trade.owner_id == user_id, models.Trade.pnl > 0).scalar() or 0
     winrate      = (wins / total_trades * 100.0) if total_trades else 0.0
 
-    # FIX: was two chained .filter() calls (AND) — must be OR
     shorts = db.query(func.count(models.Trade.id)).filter(
         models.Trade.owner_id == user_id,
         or_(models.Trade.side.ilike("short"), models.Trade.side.ilike("sell")),
@@ -273,7 +351,6 @@ def update_user_trade_summary(db: Session, user_id: str):
 # -----------------------------
 
 def get_journal_trade_summary(db: Session, journal_id: int, user_id: str):
-    # FIX: was querying UserTradeSummary (wrong table) with string PK (wrong type)
     journal = get_journal(db, journal_id, user_id)
     if not journal:
         raise ValueError("Journal not found or access denied")
@@ -300,14 +377,12 @@ def update_journal_trade_summary(db: Session, journal_id: int):
     wins         = db.query(func.count(models.Trade.id)).filter(models.Trade.jid == journal_id, models.Trade.pnl > 0).scalar() or 0
     winrate      = (wins / total_trades * 100.0) if total_trades else 0.0
 
-    # FIX: was AND — must be OR
     shorts = db.query(func.count(models.Trade.id)).filter(
         models.Trade.jid == journal_id,
         or_(models.Trade.side.ilike("short"), models.Trade.side.ilike("sell")),
     ).scalar() or 0
     sellpercent = (shorts / total_trades * 100.0) if total_trades else 0.0
 
-    # FIX: was creating/querying UserTradeSummary — must be JournalTradeSummary
     summary = (
         db.query(models.JournalTradeSummary)
         .filter(models.JournalTradeSummary.journal_id == journal_id)

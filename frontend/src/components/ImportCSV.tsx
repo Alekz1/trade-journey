@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type CsvType = "order" | "balance" | "unknown";
-type ImportResult = { success: boolean; message: string };
+type ImportResult = { success: boolean; message: string; imported?: number; skipped?: number };
 
 interface ImportCSVProps {
   refresh?: () => void;
@@ -76,8 +76,8 @@ const ImportCSV: React.FC<ImportCSVProps> = ({ refresh, journalId }) => {
     formData.append("journal_id", String(journalId));
     setLoading(true); setResult(null);
     try {
-      const res = await api.post<{ message: string }>("/trades/import-csv", formData);
-      setResult({ success: true, message: res.data.message });
+      const res = await api.post<{ message: string; imported?: number; skipped?: number }>("/trades/import-csv", formData);
+      setResult({ success: true, message: res.data.message, imported: res.data.imported, skipped: res.data.skipped });
       setFile(null); setDetectedType(null); setSizeWarning(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
       refresh?.();
@@ -222,6 +222,11 @@ const ImportCSV: React.FC<ImportCSVProps> = ({ refresh, journalId }) => {
           : "border-red-800/60 bg-red-950/20 text-red-500"
           }`}>
           {result.success ? "✓ " : "✗ "}{result.message}
+          {result.success && result.skipped != null && result.skipped > 0 && (
+            <span className="ml-2 text-xs text-green-800">
+              ({result.skipped} duplicate{result.skipped !== 1 ? "s" : ""} skipped)
+            </span>
+          )}
           {result.success && (
             <button onClick={handleReset} className="ml-3 text-green-700 hover:text-green-500 underline text-xs transition">
               {t("import_another")}
