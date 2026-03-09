@@ -17,19 +17,18 @@ const API_URL = import.meta.env.VITE_API_URL;
    Password validation rules
 ══════════════════════════════════════════════════════════════════════ */
 const RULES = [
-  { id: "len",     label: "At least 8 characters",          test: (p) => p.length >= 8 },
-  { id: "upper",   label: "One uppercase letter (A–Z)",      test: (p) => /[A-Z]/.test(p) },
-  { id: "lower",   label: "One lowercase letter (a–z)",      test: (p) => /[a-z]/.test(p) },
-  { id: "digit",   label: "One number (0–9)",                test: (p) => /\d/.test(p) },
-  { id: "special", label: "One special character (!@#$…)",   test: (p) => /[^A-Za-z0-9]/.test(p) },
+  { id: "len", labelKey: "pw_rule_len", test: (p) => p.length >= 8 },
+  { id: "upper", labelKey: "pw_rule_upper", test: (p) => /[A-Z]/.test(p) },
+  { id: "lower", labelKey: "pw_rule_lower", test: (p) => /[a-z]/.test(p) },
+  { id: "digit", labelKey: "pw_rule_digit", test: (p) => /\d/.test(p) },
+  { id: "special", labelKey: "pw_rule_special", test: (p) => /[^A-Za-z0-9]/.test(p) },
 ];
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /* ─── shared input style ─────────────────────────────────────────────── */
 const inputCls = (hasError) =>
-  `w-full bg-black border ${
-    hasError ? "border-red-700" : "border-green-900/70 focus:border-green-600"
+  `w-full bg-black border ${hasError ? "border-red-700" : "border-green-900/70 focus:border-green-600"
   } text-green-400 placeholder-green-900 px-3 py-2.5 text-sm outline-none transition-colors duration-150 font-jersey15`;
 
 /* ─── field wrapper ──────────────────────────────────────────────────── */
@@ -46,23 +45,23 @@ const Field = ({ label, error, children }) => (
 ══════════════════════════════════════════════════════════════════════ */
 const LoginForm = ({ onSuccess }) => {
   const { t } = useTranslation();
-  const [email, setEmail]       = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPw, setShowPw]     = useState(false);
-  const [error, setError]       = useState("");
-  const [loading, setLoading]   = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
-    if (!email || !password) { setError("Please fill in all fields."); return; }
+    if (!email || !password) { setError(t("fill_all_fields")); return; }
     setLoading(true);
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
-      const token  = await result.user.getIdToken();
+      const token = await result.user.getIdToken();
       await onSuccess(token);
     } catch (err) {
-      setError(friendlyFirebaseError(err.code));
+      setError(friendlyFirebaseError(err.code, t));
     } finally {
       setLoading(false);
     }
@@ -129,25 +128,25 @@ const LoginForm = ({ onSuccess }) => {
 ══════════════════════════════════════════════════════════════════════ */
 const RegisterForm = ({ onSuccess }) => {
   const { t } = useTranslation();
-  const [email,    setEmail]    = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirm,  setConfirm]  = useState("");
-  const [showPw,   setShowPw]   = useState(false);
-  const [showCf,   setShowCf]   = useState(false);
-  const [touched,  setTouched]  = useState({ email: false, password: false, confirm: false });
-  const [error,    setError]    = useState("");
-  const [loading,  setLoading]  = useState(false);
+  const [confirm, setConfirm] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [showCf, setShowCf] = useState(false);
+  const [touched, setTouched] = useState({ email: false, password: false, confirm: false });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   /* Live rule checks */
-  const ruleResults = RULES.map((r) => ({ ...r, ok: r.test(password) }));
+  const ruleResults = RULES.map((r) => ({ ...r, label: r.labelKey, ok: r.test(password) }));
   const allRulesPass = ruleResults.every((r) => r.ok);
-  const emailValid   = emailRegex.test(email);
+  const emailValid = emailRegex.test(email);
   const confirmMatch = password === confirm && confirm !== "";
-  const formValid    = emailValid && allRulesPass && confirmMatch;
+  const formValid = emailValid && allRulesPass && confirmMatch;
 
   /* Field-level errors (shown only after blur) */
-  const emailErr   = touched.email    && !emailValid   ? "Enter a valid email address." : "";
-  const confirmErr = touched.confirm  && !confirmMatch ? "Passwords do not match." : "";
+  const emailErr = touched.email && !emailValid ? t("email_invalid") : "";
+  const confirmErr = touched.confirm && !confirmMatch ? t("pw_no_match") : "";
 
   const blur = (field) => setTouched((p) => ({ ...p, [field]: true }));
 
@@ -158,10 +157,10 @@ const RegisterForm = ({ onSuccess }) => {
     setLoading(true);
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
-      const token  = await result.user.getIdToken();
+      const token = await result.user.getIdToken();
       await onSuccess(token);
     } catch (err) {
-      setError(friendlyFirebaseError(err.code));
+      setError(friendlyFirebaseError(err.code, t));
     } finally {
       setLoading(false);
     }
@@ -213,7 +212,7 @@ const RegisterForm = ({ onSuccess }) => {
                   width={12}
                   className={r.ok ? "text-green-dark shrink-0" : "text-green-900 shrink-0"}
                 />
-                <span className={r.ok ? "text-green-600" : "text-green-900"}>{r.label}</span>
+                <span className={r.ok ? "text-green-600" : "text-green-900"}>{t(r.labelKey)}</span>
               </div>
             ))}
           </div>
@@ -221,7 +220,7 @@ const RegisterForm = ({ onSuccess }) => {
       </Field>
 
       {/* Confirm password */}
-      <Field label="Confirm password" error={confirmErr}>
+      <Field label={t("confirm_password")} error={confirmErr}>
         <div className="relative">
           <input
             type={showCf ? "text" : "password"}
@@ -245,9 +244,8 @@ const RegisterForm = ({ onSuccess }) => {
             <Icon
               icon={confirmMatch ? "pixelarticons:check" : "pixelarticons:close"}
               width={14}
-              className={`absolute right-8 top-1/2 -translate-y-1/2 ${
-                confirmMatch ? "text-green-dark" : "text-red-700"
-              }`}
+              className={`absolute right-8 top-1/2 -translate-y-1/2 ${confirmMatch ? "text-green-dark" : "text-red-700"
+                }`}
             />
           )}
         </div>
@@ -290,7 +288,7 @@ function AuthPage() {
     searchParams.get("tab") === "register" ? "register" : "login"
   );
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [googleError,   setGoogleError]   = useState("");
+  const [googleError, setGoogleError] = useState("");
 
   /* Redirect already-logged-in users */
   useEffect(() => {
@@ -324,10 +322,10 @@ function AuthPage() {
     setGoogleLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      const token  = await result.user.getIdToken();
+      const token = await result.user.getIdToken();
       await sendTokenToBackend(token);
     } catch (err) {
-      setGoogleError(friendlyFirebaseError(err.code));
+      setGoogleError(friendlyFirebaseError(err.code, t));
     } finally {
       setGoogleLoading(false);
     }
@@ -337,11 +335,10 @@ function AuthPage() {
     <button
       key={id}
       onClick={() => setActiveTab(id)}
-      className={`flex-1 py-2.5 text-sm font-workbech transition-all duration-150 border-b-2 ${
-        activeTab === id
-          ? "border-green-dark text-green-dark bg-green-950/30"
-          : "border-transparent text-green-800 hover:text-green-600 hover:bg-green-950/10"
-      }`}
+      className={`flex-1 py-2.5 text-sm font-workbech transition-all duration-150 border-b-2 ${activeTab === id
+        ? "border-green-dark text-green-dark bg-green-950/30"
+        : "border-transparent text-green-800 hover:text-green-600 hover:bg-green-950/10"
+        }`}
     >
       {label}
     </button>
@@ -377,7 +374,7 @@ function AuthPage() {
 
         {/* Tab switcher */}
         <div className="flex border-b border-green-900/60">
-          {tabBtn("login",    t("login"))}
+          {tabBtn("login", t("login"))}
           {tabBtn("register", t("signup"))}
         </div>
 
@@ -385,7 +382,7 @@ function AuthPage() {
         <div className="p-6 sm:p-8">
 
           {activeTab === "login"
-            ? <LoginForm    onSuccess={sendTokenToBackend} />
+            ? <LoginForm onSuccess={sendTokenToBackend} />
             : <RegisterForm onSuccess={sendTokenToBackend} />
           }
 
@@ -406,7 +403,7 @@ function AuthPage() {
               <Icon icon="pixelarticons:refresh" className="animate-spin" width={16} />
             ) : (
               <svg width="16" height="16" viewBox="0 0 488 512" fill="currentColor" aria-hidden="true">
-                <path d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"/>
+                <path d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z" />
               </svg>
             )}
             {t("google_login")}
@@ -421,7 +418,7 @@ function AuthPage() {
         <div className="border-t border-green-900/40 px-6 py-3 text-center text-xs text-green-900">
           {activeTab === "login" ? (
             <>
-              {t("signup")}?{" "}
+              {t("no_account_yet")}{" "}
               <button
                 onClick={() => setActiveTab("register")}
                 className="text-green-700 hover:text-green-500 underline transition-colors"
@@ -431,7 +428,7 @@ function AuthPage() {
             </>
           ) : (
             <>
-              Already have an account?{" "}
+              {t("already_have_account")}{" "}
               <button
                 onClick={() => setActiveTab("login")}
                 className="text-green-700 hover:text-green-500 underline transition-colors"
@@ -449,7 +446,7 @@ function AuthPage() {
         className="mt-6 text-xs text-green-900 hover:text-green-700 transition-colors flex items-center gap-1"
       >
         <Icon icon="pixelarticons:arrow-left" width={12} />
-        Back to home
+        {t("back_to_home")}
       </button>
     </div>
   );
@@ -458,19 +455,19 @@ function AuthPage() {
 /* ══════════════════════════════════════════════════════════════════════
    Firebase error → human-readable message
 ══════════════════════════════════════════════════════════════════════ */
-function friendlyFirebaseError(code) {
+function friendlyFirebaseError(code, t) {
   const map = {
-    "auth/invalid-email":            "Invalid email address.",
-    "auth/user-not-found":           "No account found with this email.",
-    "auth/wrong-password":           "Incorrect password.",
-    "auth/email-already-in-use":     "An account with this email already exists.",
-    "auth/weak-password":            "Password is too weak.",
-    "auth/too-many-requests":        "Too many attempts. Please wait a moment.",
-    "auth/network-request-failed":   "Network error. Check your connection.",
-    "auth/popup-closed-by-user":     "Sign-in popup was closed.",
-    "auth/cancelled-popup-request":  "Another popup is already open.",
+    "auth/invalid-email": t("fb_invalid_email"),
+    "auth/user-not-found": t("fb_user_not_found"),
+    "auth/wrong-password": t("fb_wrong_password"),
+    "auth/email-already-in-use": t("fb_email_in_use"),
+    "auth/weak-password": t("fb_weak_password"),
+    "auth/too-many-requests": t("fb_too_many_requests"),
+    "auth/network-request-failed": t("fb_network_error"),
+    "auth/popup-closed-by-user": t("fb_popup_closed"),
+    "auth/cancelled-popup-request": t("fb_popup_cancelled"),
   };
-  return map[code] ?? "Something went wrong. Please try again.";
+  return map[code] ?? t("fb_generic_error");
 }
 
 export default AuthPage;

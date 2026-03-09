@@ -1,11 +1,11 @@
 import { formatInTimeZone } from 'date-fns-tz';
 
 interface PartialClose {
-  exit_price:      number;
+  exit_price: number;
   closed_quantity: number;
-  fees:            number | null;
-  pctimestamp:       string | null;
-  pnl:             number | null;
+  fees: number | null;
+  pctimestamp: string | null;
+  pnl: number | null;
 }
 
 export type Trade = {
@@ -18,6 +18,9 @@ export type Trade = {
   quantity: number;
   partial_closes: PartialClose[];
   image_url?: string | null;
+  message?: string | null;
+  tags?: string[] | null;
+  journal_id: number;
 };
 
 export interface FTrade {
@@ -35,6 +38,9 @@ export interface FTrade {
     pnl: number | null;
   }[];
   file: File | null;
+  journal_id: number | null;
+  message?: string | null;
+  tags?: string[];
 }
 
 
@@ -44,8 +50,8 @@ export interface FTrade {
  * into the given timezone.
  */
 export function formatDate(
-  isoString: string | Date | null | undefined, 
-  targetTz: string = 'UTC', 
+  isoString: string | Date | null | undefined,
+  targetTz: string = 'UTC',
   fmt: string = 'yyyy-MM-dd HH:mm:ss xxx'
 ): string | null {
   if (!isoString) return null;
@@ -64,7 +70,7 @@ export function formatDate(
 
     // Check for existing timezone designators (Z or ±HH:mm)
     const hasTz = /[zZ]$|[+-]\d{2}(:?\d{2})?$/.test(s);
-    const forced = hasTz ? s : s.replace(' ', 'T') + 'Z'; 
+    const forced = hasTz ? s : s.replace(' ', 'T') + 'Z';
     date = new Date(forced);
   }
 
