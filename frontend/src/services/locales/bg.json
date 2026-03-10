@@ -163,5 +163,19 @@
   "winning_trades": "Печеливши сделки",
   "losing_trades": "Загубени сделки",
   "avg_profit_per_trade": "Ср. печалба/сделка",
-  "avg_loss_per_trade": "Ср. загуба/сделка"
+  "avg_loss_per_trade": "Ср. загуба/сделка",
+  "avg_profit_loss_ratio": "Ср. съотношение печалба/загуба",
+  "per": "на",
+  "January": "Януари",
+  "February": "Февруари",
+  "March": "Март",
+  "April": "Април",
+  "May": "Май",
+  "June": "Юни",
+  "July": "Юли",
+  "August": "Август",
+  "September": "Септември",
+  "October": "Октомври",
+  "November": "Ноември",
+  "December": "Декември"
 }

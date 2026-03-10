@@ -163,5 +163,19 @@
   "winning_trades": "Winning Trades",
   "losing_trades": "Losing Trades",
   "avg_profit_per_trade": "Avg Profit/Trade",
-  "avg_loss_per_trade": "Avg Loss/Trade"
+  "avg_loss_per_trade": "Avg Loss/Trade",
+  "avg_profit_loss_ratio": "Avg Profit/Loss Ratio",
+  "per": "per",
+  "January": "January",
+  "February": "February",
+  "March": "March",
+  "April": "April",
+  "May": "May",
+  "June": "June",
+  "July": "July",
+  "August": "August",
+  "September": "September",
+  "October": "October",
+  "November": "November",
+  "December": "December"
 }
