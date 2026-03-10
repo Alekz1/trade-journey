@@ -12,10 +12,12 @@ interface PnlCalendarProps {
 const PnlCalendar: React.FC<PnlCalendarProps> = ({ trades, selectedTz }) => {
   const { t } = useTranslation();
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [showMonthSelector, setShowMonthSelector] = useState(false);
 
   // Group trades by date and calculate daily PnL
   const dailyPnl = useMemo(() => {
     const pnlByDate = new Map<string, number>();
+    const tradeCountByDate = new Map<string, number>();
 
     trades.forEach(trade => {
       try {
@@ -24,15 +26,17 @@ const PnlCalendar: React.FC<PnlCalendarProps> = ({ trades, selectedTz }) => {
 
         if (pnlByDate.has(dateKey)) {
           pnlByDate.set(dateKey, pnlByDate.get(dateKey)! + (trade.pnl ?? 0));
+          tradeCountByDate.set(dateKey, tradeCountByDate.get(dateKey)! + 1);
         } else {
           pnlByDate.set(dateKey, trade.pnl ?? 0);
+          tradeCountByDate.set(dateKey, 1);
         }
       } catch (error) {
         console.error("Error parsing trade date:", error);
       }
     });
 
-    return pnlByDate;
+    return { pnlByDate, tradeCountByDate };
   }, [trades]);
 
   // Generate calendar days for the current month
@@ -83,15 +87,91 @@ const PnlCalendar: React.FC<PnlCalendarProps> = ({ trades, selectedTz }) => {
     setCurrentMonth(addMonths(currentMonth, 1));
   };
 
-  const handleToday = () => {
+    const handleToday = () => {
     setCurrentMonth(new Date());
   };
+
+  const handleMonthSelect = (month: number) => {
+    const newDate = new Date(currentMonth);
+    newDate.setMonth(month);
+    setCurrentMonth(newDate);
+    setShowMonthSelector(false);
+  };
+
+  const handleYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const year = parseInt(e.target.value);
+    if (!isNaN(year)) {
+      const newDate = new Date(currentMonth);
+      newDate.setFullYear(year);
+      setCurrentMonth(newDate);
+    }
+  };
+
+  const handleYearBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const year = parseInt(e.target.value);
+    if (isNaN(year) || year < 2000 || year > 2100) {
+      const newDate = new Date(currentMonth);
+      e.target.value = newDate.getFullYear().toString();
+    }
+  };
+
+  const handleClickOutside = (e: MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (!target.closest('.month-selector') && !target.closest('.month-selector-trigger')) {
+      setShowMonthSelector(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (showMonthSelector) {
+      document.addEventListener('click', handleClickOutside);
+    } else {
+      document.removeEventListener('click', handleClickOutside);
+    }
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showMonthSelector]);
 
   return (
     <div className="border border-green-900/60 bg-black p-4">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <h3 className="text-lg text-green-dark">{t("pnl_calendar")}</h3>
+                    <div className="relative">
+            <button
+              onClick={() => setShowMonthSelector(!showMonthSelector)}
+              className="text-md text-green-400 font-medium hover:text-green-300 transition flex items-center gap-1 month-selector-trigger"
+            >
+              {t(format(currentMonth, 'MMMM'))} {format(currentMonth, 'yyyy')}
+              <Icon icon="pixelarticons:chevron-down" width={14} className="opacity-60" />
+            </button>
+                        {showMonthSelector && (
+              <div className="absolute z-10 mt-2 w-64 bg-black border border-green-800 rounded-md shadow-lg p-3 month-selector">
+                <div className="flex justify-center mb-3">
+                  <input
+                    type="number"
+                    defaultValue={currentMonth.getFullYear()}
+                    onChange={handleYearChange}
+                    onBlur={handleYearBlur}
+                    className="w-24 bg-green-900/50 border border-green-700 rounded px-3 py-1.5 text-center text-sm focus:outline-none focus:border-green-500"
+                    min="2000"
+                    max="2100"
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((month, index) => (
+                    <button
+                      key={month}
+                      onClick={() => handleMonthSelect(index)}
+                      className={`px-2 py-1.5 rounded transition hover:bg-green-900 
+                        ${currentMonth.getMonth() === index ? 'bg-green-800 text-white' : 'text-green-300 hover:text-white'}`}
+                    >
+                      {t(month)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-1 text-sm">
             <button
               onClick={handlePrevMonth}
@@ -109,7 +189,7 @@ const PnlCalendar: React.FC<PnlCalendarProps> = ({ trades, selectedTz }) => {
             </button>
             <button
               onClick={handleToday}
-              className="text-xs border border-green-800 px-2 py-0.5 hover:bg-green-900/20 transition"
+              className="text-sm border border-green-800 px-2 py-0.5 hover:bg-green-600/20 transition"
             >
               {t("today")}
             </button>
@@ -129,21 +209,26 @@ const PnlCalendar: React.FC<PnlCalendarProps> = ({ trades, selectedTz }) => {
       <div className="grid grid-cols-7 gap-1">
         {calendarDays.map(day => {
           const dateKey = format(day, 'yyyy-MM-dd');
-          const dayPnl = dailyPnl.get(dateKey) ?? 0;
+          const dayPnl = dailyPnl.pnlByDate.get(dateKey) ?? 0;
+          const tradeCount = dailyPnl.tradeCountByDate.get(dateKey) ?? 0;
           const isCurrentMonth = isSameMonth(day, currentMonth);
           const isToday = isSameDay(day, new Date());
-
           return (
             <div
               key={dateKey}
-              className={`h-16 p-1 rounded border text-xs flex flex-col justify-center items-center
+              className={`h-16 p-1 rounded border text-[15px] flex flex-col justify-center items-center
                 ${isCurrentMonth ? getPnlColor(dayPnl) : 'bg-green-950/30 border-green-900/30 text-green-800'}
-                ${isToday ? 'ring-1 ring-green-500' : ''}`}
+                ${isToday ? 'ring-1 ring-green-300/80' : ''}`}
             >
               <div className="font-semibold">{format(day, 'd')}</div>
               {dayPnl !== 0 && (
-                <div className={`text-[10px] ${getPnlTextColor(dayPnl)}`}>
-                  {dayPnl > 0 ? '+' : ''}{dayPnl.toFixed(2)}
+                <div className={`text-[17px] font-medium ${getPnlTextColor(dayPnl)}`}>
+                  {dayPnl >= 0 ? '+' : '-'}{Math.abs(dayPnl).toFixed(2)}
+                </div>
+              )}
+              {tradeCount > 0 && (
+                <div className="text-[14px] text-green-600">
+                  {tradeCount} {t(tradeCount === 1 ? "trade" : "trades")}
                 </div>
               )}
             </div>

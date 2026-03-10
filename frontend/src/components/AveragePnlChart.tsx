@@ -14,19 +14,26 @@ interface AveragePnlChartProps {
 const AveragePnlChart: React.FC<AveragePnlChartProps> = ({ trades }) => {
   const { t } = useTranslation();
 
-  const { winningTrades, losingTrades, avgProfit, avgLoss, winRate } = useMemo(() => {
+    const { winningTrades, losingTrades, avgProfit, avgLoss, winRate, profitLossRatio } = useMemo(() => {
     const winning = trades.filter(t => (t.pnl ?? 0) > 0);
     const losing = trades.filter(t => (t.pnl ?? 0) < 0);
 
     const totalWinningPnl = winning.reduce((sum, trade) => sum + (trade.pnl ?? 0), 0);
     const totalLosingPnl = losing.reduce((sum, trade) => sum + (trade.pnl ?? 0), 0);
 
+    const calculatedAvgProfit = winning.length > 0 ? totalWinningPnl / winning.length : 0;
+    const calculatedAvgLoss = losing.length > 0 ? totalLosingPnl / losing.length : 0;
+    const calculatedProfitLossRatio = calculatedAvgLoss !== 0 
+      ? Math.abs(calculatedAvgProfit / calculatedAvgLoss)
+      : calculatedAvgProfit > 0 ? Infinity : 0;
+
     return {
       winningTrades: winning.length,
       losingTrades: losing.length,
-      avgProfit: winning.length > 0 ? totalWinningPnl / winning.length : 0,
-      avgLoss: losing.length > 0 ? totalLosingPnl / losing.length : 0,
-      winRate: trades.length > 0 ? (winning.length / trades.length) * 100 : 0
+      avgProfit: calculatedAvgProfit,
+      avgLoss: calculatedAvgLoss,
+      winRate: trades.length > 0 ? (winning.length / trades.length) * 100 : 0,
+      profitLossRatio: calculatedProfitLossRatio
     };
   }, [trades]);
 
@@ -101,7 +108,7 @@ const AveragePnlChart: React.FC<AveragePnlChartProps> = ({ trades }) => {
         <Pie data={chartData} options={chartOptions} />
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mt-4">
+      <div className="grid grid-cols-3 gap-3 mt-4">
         {/* Average Profit */}
         <div className="text-center">
           <div className="text-xs text-green-700 mb-1">{t("avg_profit_per_trade")}</div>
@@ -110,6 +117,14 @@ const AveragePnlChart: React.FC<AveragePnlChartProps> = ({ trades }) => {
           </div>
           <div className="text-xs text-green-800">
             ({winningTrades} {t("winning_trades")})
+          </div>
+        </div>
+
+        {/* Profit/Loss Ratio */}
+        <div className="text-center">
+          <div className="text-sm text-green-700 mb-1">{t("avg_profit_loss_ratio")}</div>
+          <div className={`text-lg font-semibold ${profitLossRatio >= 1 ? 'text-green-400' : 'text-red-400'}`}>
+            {profitLossRatio === Infinity ? '∞' : profitLossRatio.toFixed(2)}
           </div>
         </div>
 
@@ -125,7 +140,7 @@ const AveragePnlChart: React.FC<AveragePnlChartProps> = ({ trades }) => {
         </div>
       </div>
 
-      {/* Win Rate */}
+                  {/* Win Rate */}
       <div className="mt-3 pt-3 border-t border-green-900/40 text-center">
         <div className="text-xs text-green-700 mb-1">{t("winrate")}</div>
         <div className="text-xl font-bold text-green-400">
