@@ -279,6 +279,12 @@ const Analytics: React.FC = () => {
           TradeJourney
         </h1>
         <div className="flex items-center gap-2 sm:gap-3 overflow-hidden flex-1 justify-end">
+          <button className="border rounded-sm border-green-600/60 px-8 py-1 text-sm bg-green-500 text-black hover:bg-green-600 hover:text-gray-300 transition"
+                onClick={() => navigate("/trades")}
+                title={t("new_trade")}
+          >
+                {t("new_trade")}
+          </button>
           {isLoggedIn && (
             <JournalSelector
               selectedJournalId={journal?.id ?? null}

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { To, useNavigate } from "react-router-dom";
-import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import api from "./services/api";
 import { Icon } from "@iconify/react";
 
@@ -11,6 +11,7 @@ import ImportCSV from "./components/ImportCSV";
 import { TimezoneSelector } from "./components/TimezoneSelect";
 import { ClockWithTimezone } from "./components/ClockWithTimezone";
 import { LanguageSelector } from "./components/LanguageSelector";
+import JournalSelector, { Journal } from "./components/JournalSelector";
 import { useTranslation } from "react-i18next";
 import TradeForm from "./components/TradeForm";
 import { FTrade, Trade } from "./services/utils";
@@ -23,20 +24,15 @@ type Filters = {
   limit: number;
 };
 
-type UserStats = {
-  total_pnl: number;
-  winrate: number;
-  sellpercent?: number;
-};
+const TZ_KEY = "preferredTimezone";
 
 const Trades: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [user, setUser] = useState<User | null>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
-  const [allTrades, setAllTrades] = useState<Trade[]>([]);
-  const [selectedJournalId, setSelectedJournalId] = useState<number>(1);
-  const [userStats, setUserStats] = useState<UserStats>({ total_pnl: 0, winrate: 0, sellpercent: 0 });
+  const [selectedJournal, setSelectedJournal] = useState<Journal | null>(null);
+  const [isJournalsLoaded, setIsJournalsLoaded] = useState(false);
   const [selectedTz, setSelectedTz] = useState<string>("Local Timezone");
   const [filters, setFilters] = useState<Filters>({
     symbol: "",
@@ -50,78 +46,64 @@ const Trades: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  const fetchTrades = async (activeFilters: Filters = filters) => {
+  // ── Fetchers ───────────────────────────────────────────────────────────────
+  const fetchTrades = useCallback(async (
+    f: Filters = filters,
+    journal: Journal | null = selectedJournal,
+  ) => {
+    if (!journal) return;
+    setLoading(true);
+    setError("");
     try {
-      setLoading(true);
-      setError("");
-      const cleanedFilters = Object.fromEntries(
-        Object.entries(activeFilters).filter(
-          ([_, value]) => value !== "" && value !== null && value !== undefined
-        )
+      const params = Object.fromEntries(
+        Object.entries({ ...f, journal_id: journal.id }).filter(([, v]) => v !== "" && v != null)
       );
-      const res = await api.get<Trade[]>("/trades/", { params: cleanedFilters });
+      const res = await api.get<Trade[]>("/trades/", { params });
       setTrades(res.data);
-    } catch (err) {
-      console.error("Failed to fetch trades:", err);
+    } catch {
       setError("Failed to fetch trades");
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, selectedJournal]);
 
-  const fetchTradesUnfiltered = async () => {
-    try {
-      const res = await api.get<Trade[]>("/trades/");
-      setAllTrades(res.data);
-    } catch (err) {
-      console.error("Failed to fetch trades:", err);
-    }
-  };
-
-  const fetchUserStats = async () => {
-    try {
-      const res = await api.get<UserStats>("/users/me/stats/");
-      setUserStats(res.data);
-    } catch (error) {
-      console.error("Error fetching user PnL:", error);
-    }
-  };
-
-  const refreshUserStats = async () => {
-    try {
-      const res = await api.get<UserStats>("/users/me/stats/refresh/");
-      setUserStats(res.data);
-    } catch (error) {
-      console.error("Error refreshing user PnL:", error);
-    }
-  };
-
-  const fullrefresh = async () => {
+  const fullRefresh = useCallback(async () => {
     await fetchTrades();
-    await fetchTradesUnfiltered();
-    await refreshUserStats();
-  };
+  }, [fetchTrades]);
+
+  // ── Journal change ─────────────────────────────────────────────────────────
+  const handleJournalChange = useCallback((journal: Journal) => {
+    setSelectedJournal(journal);
+    localStorage.setItem("selectedJournalId", String(journal.id));
+    const resetFilters: Filters = { symbol: "", side: "", date_from: "", date_to: "", limit: 10 };
+    setFilters(resetFilters);
+    fetchTrades(resetFilters, journal);
+  }, [fetchTrades]);
 
   const handleTimezoneChange = (tz: string) => {
     setSelectedTz(tz);
-    localStorage.setItem("preferredTimezone", tz);
+    localStorage.setItem(TZ_KEY, tz);
   };
 
+  // ── Mount ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const storedTz = localStorage.getItem("preferredTimezone");
+    const storedTz = localStorage.getItem(TZ_KEY);
     if (storedTz) setSelectedTz(storedTz);
     else setSelectedTz("Local Timezone");
     setIsLoggedIn(!!token);
     if (!token) return;
-    fetchTrades();
-    fetchUserStats();
-    fetchTradesUnfiltered();
+    // Trades are fetched once JournalSelector fires onJournalChange
     const auth = getAuth();
     onAuthStateChanged(auth, (currentUser) => setUser(currentUser || null));
   }, []);
 
+  // ── Add trade ──────────────────────────────────────────────────────────────
   const addTrade = async (trade: FTrade) => {
+    if (!selectedJournal) {
+      setError(t("select_journal_first"));
+      return;
+    }
     try {
       const fd = new FormData();
       fd.append("symbol", trade.symbol);
@@ -130,11 +112,10 @@ const Trades: React.FC = () => {
       fd.append("quantity", String(trade.quantity));
       fd.append("partial_closes", JSON.stringify(trade.partial_closes));
       if (trade.file) fd.append("file", trade.file);
-      const res = await api.post<Trade>("/trades/", fd, {
+      await api.post<Trade>("/trades/", fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      setTrades((prev) => [...prev, res.data]);
-      await fullrefresh();
+      await fullRefresh();
     } catch (err: any) {
       if (err.response?.status === 401) setError(t("unauthorized"));
       else setError(t("addtradeerror"));
@@ -150,10 +131,22 @@ const Trades: React.FC = () => {
   return (
     <div className="font-jersey15 text-green-600 bg-black min-h-screen">
 
-            {/* ── Fixed Header ──────────────────────────────────────────────── */}
-      <header className="fixed top-0 inset-x-0 h-16 border-b border-green-900/60 z-50 bg-black flex items-center justify-between px-4">
-        <h1 className="text-2xl sm:text-3xl text-green-dark font-workbech px-1 cursor-pointer" onClick={() => navigate("/home")}>TradeJourney</h1>
-        <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
+      {/* ── Fixed Header ──────────────────────────────────────────────── */}
+      <header className="fixed top-0 inset-x-0 h-16 border-b border-green-900/60 z-50 bg-black flex items-center justify-between px-4 gap-3">
+        <h1
+          className="text-2xl sm:text-3xl text-green-dark font-workbech px-1 cursor-pointer shrink-0"
+          onClick={() => navigate("/home")}
+        >
+          TradeJourney
+        </h1>
+        <div className="flex items-center gap-2 sm:gap-3 overflow-hidden flex-1 justify-end">
+          {isLoggedIn && (
+            <JournalSelector
+              selectedJournalId={selectedJournal?.id ?? null}
+              onJournalChange={handleJournalChange}
+              onLoaded={() => setTimeout(() => setIsJournalsLoaded(true), 10)}
+            />
+          )}
           <div className="hidden sm:block"><ClockWithTimezone timezone={selectedTz} /></div>
           <TimezoneSelector selectedTz={selectedTz} onChange={handleTimezoneChange} />
           <LanguageSelector />
@@ -218,17 +211,38 @@ const Trades: React.FC = () => {
           { path: "/risk",      icon: "pixelarticons:shield",     label: t("risk_center") },
           { path: "/journal",   icon: "pixelarticons:notes",      label: t("journal_nav") },
         ].map(({ path, icon, label }) => (
-          <button key={path} onClick={() => navigate(path)} className={`flex flex-col items-center gap-0.5 transition ${path === "/home" ? "text-green-dark" : "text-green-600 hover:text-green-300"}`}>
+          <button
+            key={path}
+            onClick={() => navigate(path)}
+            className={`flex flex-col items-center gap-0.5 transition ${path === "/trades" ? "text-green-dark" : "text-green-600 hover:text-green-300"}`}
+          >
             <Icon icon={icon} width={24} />
             <span className="text-[9px]">{label}</span>
           </button>
         ))}
       </nav>
 
-            {/* ── Main Content ──────────────────────────────────────────────── */}
+      {/* ── Main Content ──────────────────────────────────────────────── */}
       {isLoggedIn && (
         <main className="pt-16 md:ml-20 pb-20 md:pb-8 min-h-screen overflow-x-hidden">
           <div className="p-4 sm:p-6 lg:p-8">
+
+            {/* Journal badge */}
+            {selectedJournal && (
+              <div className="flex items-center gap-2 mb-5">
+                <span className="text-sm border border-green-900/60 px-2 py-0.5 text-green-800 tracking-wide">
+                  <Icon icon="pixelarticons:notes" width={12} className="inline mr-1" />
+                  {selectedJournal.name}
+                </span>
+              </div>
+            )}
+
+            {/* No-journal warning */}
+            {!selectedJournal && isJournalsLoaded && (
+              <div className="border border-yellow-700/40 bg-yellow-950/20 p-4 text-yellow-500 text-sm mb-5">
+                {t("no_journal_warning")}
+              </div>
+            )}
 
             <div className="flex flex-col xl:flex-row gap-6 items-start">
               {/* ── Left Column: Form ── */}
@@ -249,7 +263,16 @@ const Trades: React.FC = () => {
 
                   {/* Form Content */}
                   <div className="p-4 sm:p-5">
-                    <TradeForm onAdd={addTrade} journalId={selectedJournalId} />
+                    {!selectedJournal && isJournalsLoaded ? (
+                      <p className="text-yellow-600 text-sm py-4 text-center">
+                        {t("select_journal_first")}
+                      </p>
+                    ) : (
+                      <TradeForm
+                        onAdd={addTrade}
+                        journalId={selectedJournal?.id ?? 0}
+                      />
+                    )}
                     {error && (
                       <div className="mt-4 border border-red-900/60 bg-red-950/30 p-3 flex items-start gap-2">
                         <Icon icon="pixelarticons:alert" className="text-red-500 shrink-0 mt-0.5" width={16} />
@@ -269,15 +292,15 @@ const Trades: React.FC = () => {
                   onApplyFilters={handleApplyFilters}
                   loading={loading}
                   error={error}
-                  refresh={fullrefresh}
+                  refresh={fullRefresh}
                   selectedTz={selectedTz}
                 />
 
                 <div className="border border-green-900/40 bg-black p-4 relative overflow-hidden">
                   <span className="absolute -top-3 left-4 bg-black px-2 text-[10px] text-green-700 tracking-widest uppercase">
-                    DATA IMPORT
+                    {t("import_csv")}
                   </span>
-                  <ImportCSV refresh={fullrefresh} journalId={selectedJournalId} />
+                  <ImportCSV refresh={fullRefresh} journalId={selectedJournal?.id ?? null} />
                 </div>
               </div>
             </div>
