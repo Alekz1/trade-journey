@@ -104,47 +104,39 @@ const AveragePnlChart: React.FC<AveragePnlChartProps> = ({ trades }) => {
     <div className="border border-green-900/60 bg-black p-4 flex flex-col h-full">
       <h3 className="text-lg text-green-dark mb-4">{t("trade_performance")}</h3>
 
-      <div className="flex-1 min-h-[200px] mb-4 relative">
+            <div className="flex-1 min-h-[220px] mb-6 relative">
         <Pie data={chartData} options={chartOptions} />
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mt-4">
+            <div className="grid grid-cols-3 gap-4 mt-6">
         {/* Average Profit */}
-        <div className="text-center">
-          <div className="text-xs text-green-700 mb-1">{t("avg_profit_per_trade")}</div>
-          <div className={`text-lg font-semibold ${avgProfit > 0 ? 'text-green-400' : 'text-green-600'}`}>
+        <div className="text-center p-2">
+          <div className="text-sm text-green-300 mb-2 font-medium">{t("avg_profit_per_trade")}</div>
+          <div className={`text-2xl font-bold ${avgProfit > 0 ? 'text-green-400' : 'text-green-500'}`}>
             {avgProfit > 0 ? '+' : ''}{avgProfit.toFixed(2)}
           </div>
-          <div className="text-xs text-green-800">
+          <div className="text-xs text-green-600 mt-1">
             ({winningTrades} {t("winning_trades")})
           </div>
         </div>
 
         {/* Profit/Loss Ratio */}
-        <div className="text-center">
-          <div className="text-sm text-green-700 mb-1">{t("avg_profit_loss_ratio")}</div>
-          <div className={`text-lg font-semibold ${profitLossRatio >= 1 ? 'text-green-400' : 'text-red-400'}`}>
-            {profitLossRatio === Infinity ? '∞' : profitLossRatio.toFixed(2)}
+        <div className="text-center p-2">
+          <div className="text-sm text-green-300 mb-2 font-medium">{t("avg_profit_loss_ratio")}</div>
+          <div className={`text-2xl font-bold ${profitLossRatio >= 1 ? 'text-green-400' : 'text-red-400'}`}>
+            {profitLossRatio === Infinity ? '∞' : profitLossRatio.toFixed(2)}:1
           </div>
         </div>
 
         {/* Average Loss */}
-        <div className="text-center">
-          <div className="text-xs text-green-700 mb-1">{t("avg_loss_per_trade")}</div>
-          <div className={`text-lg font-semibold ${avgLoss < 0 ? 'text-red-400' : 'text-green-600'}`}>
+        <div className="text-center p-2">
+          <div className="text-sm text-green-300 mb-2 font-medium">{t("avg_loss_per_trade")}</div>
+          <div className={`text-2xl font-bold ${avgLoss < 0 ? 'text-red-400' : 'text-green-500'}`}>
             {avgLoss.toFixed(2)}
           </div>
-          <div className="text-xs text-green-800">
+          <div className="text-xs text-green-600 mt-1">
             ({losingTrades} {t("losing_trades")})
           </div>
-        </div>
-      </div>
-
-                  {/* Win Rate */}
-      <div className="mt-3 pt-3 border-t border-green-900/40 text-center">
-        <div className="text-xs text-green-700 mb-1">{t("winrate")}</div>
-        <div className="text-xl font-bold text-green-400">
-          {winRate.toFixed(1)}%
         </div>
       </div>
     </div>

@@ -27,11 +27,11 @@ interface TradeFormProps {
 }
 
 // ── Shared styles ──────────────────────────────────────────────────────────
-const inputCls = "border border-green-800/60 focus:border-green-400 focus:shadow-[0_0_8px_rgba(74,222,128,0.2)] bg-black/40 text-green-300 placeholder-green-900/80 px-3 py-2.5 outline-none transition-all duration-300 w-full text-sm";
-const selectCls = "border border-green-800/60 focus:border-green-400 focus:shadow-[0_0_8px_rgba(74,222,128,0.2)] bg-black/40 text-green-300 px-3 py-2.5 outline-none transition-all duration-300 text-sm";
-const labelCls = "text-[11px] text-green-700 uppercase tracking-widest mb-1.5 block font-semibold truncate";
+const inputCls = "border border-green-800/60 focus:border-green-400 focus:shadow-[0_0_8px_rgba(74,222,128,0.2)] bg-black/40 text-green-300 placeholder-green-900/80 px-3 py-2.5 outline-none transition-all duration-300 w-full text-base";
+const selectCls = "border border-green-800/60 focus:border-green-400 focus:shadow-[0_0_8px_rgba(74,222,128,0.2)] bg-black/40 text-green-300 px-3 py-2.5 outline-none transition-all duration-300 text-base";
+const labelCls = "text-xs text-green-700 uppercase tracking-widest mb-1.5 block font-semibold truncate";
 const sectionCls = "border border-green-900/40 bg-green-950/5 p-4 relative";
-const sectionTitleCls = "absolute -top-2.5 left-3 bg-black px-2 text-[10px] text-green-600 tracking-widest uppercase";
+const sectionTitleCls = "absolute -top-2.5 left-3 bg-black px-2 text-xs text-green-600 tracking-widest uppercase";
 
 // Tag color — deterministic by string
 const TAG_COLORS_BG = [
@@ -77,7 +77,7 @@ const TagInput: React.FC<{
   return (
     <div className="border border-green-900/60 focus-within:border-green-500 bg-black px-2 py-1.5 flex flex-wrap gap-1 items-center min-h-[38px] transition-colors">
       {tags.map(tag => (
-        <span key={tag} className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 border tracking-wide ${tagCls(tag)}`}>
+        <span key={tag} className={`flex items-center gap-1 text-xs px-1.5 py-0.5 border tracking-wide ${tagCls(tag)}`}>
           #{tag}
           <button type="button" onClick={() => remove(tag)} className="hover:opacity-60 transition leading-none ml-0.5">×</button>
         </span>
@@ -88,7 +88,7 @@ const TagInput: React.FC<{
         onKeyDown={handleKey}
         onBlur={commit}
         placeholder={tags.length === 0 ? t("tags_placeholder") : ""}
-        className="bg-transparent text-green-400 placeholder-green-900 outline-none text-sm flex-1 min-w-[80px]"
+        className="bg-transparent text-green-400 placeholder-green-900 outline-none text-base flex-1 min-w-[80px]"
       />
     </div>
   );
@@ -220,7 +220,7 @@ const TradeForm: React.FC<TradeFormProps> = ({ onAdd, compactMode, journalId }) 
 
         {/* Close mode toggle */}
         <div className="flex items-center gap-3 mb-4 mt-2 bg-green-950/20 py-2 px-3 border border-green-900/30">
-          <span className={`text-xs ${!multiClose ? "text-green-400" : "text-green-800"}`}>{t("singleCloseMode")}</span>
+          <span className={`text-sm ${!multiClose ? "text-green-400" : "text-green-800"}`}>{t("singleCloseMode")}</span>
           <button
             type="button"
             onClick={() => { setMultiClose(v => !v); setValidationMsg(""); }}
@@ -229,7 +229,7 @@ const TradeForm: React.FC<TradeFormProps> = ({ onAdd, compactMode, journalId }) 
             <span className={`absolute top-0.5 h-3.5 w-4 border transition-all duration-200 ${multiClose ? "right-0.5 border-green-400 bg-green-500" : "left-0.5 border-green-600 bg-green-800"
               }`} />
           </button>
-          <span className={`text-xs ${multiClose ? "text-green-400" : "text-green-800"}`}>{t("partialCloses")}</span>
+          <span className={`text-sm ${multiClose ? "text-green-400" : "text-green-800"}`}>{t("partialCloses")}</span>
         </div>
 
         {/* ── Single close ── */}
@@ -255,7 +255,7 @@ const TradeForm: React.FC<TradeFormProps> = ({ onAdd, compactMode, journalId }) 
           <div className="flex flex-col gap-3">
             {closes.map((pc, i) => (
               <div key={i} className="border border-green-800/40 bg-black/40 p-3 pt-5 flex flex-col gap-3 relative">
-                <span className="text-[10px] text-green-600 bg-green-950/50 px-2 py-0.5 border border-green-900/40 absolute top-[-8px] left-2">{t("close_n", { n: i + 1 })}</span>
+                <span className="text-xs text-green-600 bg-green-950/50 px-2 py-0.5 border border-green-900/40 absolute top-[-8px] left-2">{t("close_n", { n: i + 1 })}</span>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   <div className="min-w-0">
                     <label className={labelCls}>{t("exit")}</label>
@@ -283,17 +283,17 @@ const TradeForm: React.FC<TradeFormProps> = ({ onAdd, compactMode, journalId }) 
               </div>
             ))}
             <button type="button" onClick={addClose}
-              className="border border-green-800/60 text-green-500 hover:border-green-400 hover:bg-green-950/30 hover:shadow-[0_0_10px_rgba(74,222,128,0.15)] py-2 text-sm flex items-center gap-2 justify-center transition-all duration-300 mt-1">
+              className="border border-green-800/60 text-green-500 hover:border-green-400 hover:bg-green-950/30 hover:shadow-[0_0_10px_rgba(74,222,128,0.15)] py-2 text-base flex items-center gap-2 justify-center transition-all duration-300 mt-1">
               <Icon icon="pixelarticons:plus" width={16} />
               {t("addPartialClose")}
             </button>
           </div>
         )}
 
-        {validationMsg && <p className={`text-xs font-semibold mt-3 ${validCls}`}>{validationMsg}</p>}
+        {validationMsg && <p className={`text-sm font-semibold mt-3 ${validCls}`}>{validationMsg}</p>}
       </div>
 
-      {/* ── Advanced Data (Now always visible) ── */}
+      {/* ── Additional Data ── */}
       <div className={sectionCls}>
         <span className={sectionTitleCls}>{t("additional_data", "Additional Data")}</span>
         <div className="flex flex-col gap-4 mt-2">
@@ -308,7 +308,7 @@ const TradeForm: React.FC<TradeFormProps> = ({ onAdd, compactMode, journalId }) 
             <div>
               <label className={labelCls}>{t("tags")}</label>
               <TagInput tags={tags} onChange={setTags} />
-              <p className="text-[10px] text-green-800 mt-1">{t("tags_hint")}</p>
+              <p className="text-xs text-green-800 mt-1">{t("tags_hint")}</p>
             </div>
           </div>
 

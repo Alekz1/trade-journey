@@ -150,10 +150,10 @@ const Trades: React.FC = () => {
   return (
     <div className="font-jersey15 text-green-600 bg-black min-h-screen">
 
-      {/* ── Fixed Header ──────────────────────────────────────────────── */}
-      <header className="fixed top-0 inset-x-0 h-16 border-b border-green-900/60 z-50 bg-black flex items-center justify-between px-3">
-        <h1 className="text-xl sm:text-2xl text-green-dark font-workbech px-1">TradeJourney</h1>
-        <div className="flex items-center gap-1 sm:gap-2 overflow-hidden">
+            {/* ── Fixed Header ──────────────────────────────────────────────── */}
+      <header className="fixed top-0 inset-x-0 h-16 border-b border-green-900/60 z-50 bg-black flex items-center justify-between px-4">
+        <h1 className="text-2xl sm:text-3xl text-green-dark font-workbech px-1 cursor-pointer" onClick={() => navigate("/home")}>TradeJourney</h1>
+        <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
           <div className="hidden sm:block"><ClockWithTimezone timezone={selectedTz} /></div>
           <TimezoneSelector selectedTz={selectedTz} onChange={handleTimezoneChange} />
           <LanguageSelector />
@@ -162,52 +162,72 @@ const Trades: React.FC = () => {
         </div>
       </header>
 
-      {/* ── Desktop Sidebar ───────────────────────────────────────────── */}
-      <aside className="hidden md:flex fixed left-0 top-16 h-[calc(100vh-4rem)] w-14 flex-col items-center border-r border-green-900/60 z-40 bg-black py-3 gap-4">
+      {/* ── Desktop Sidebar ── */}
+      <aside className="hidden md:flex fixed left-0 top-16 h-[calc(100vh-4rem)] w-20 hover:w-48 flex-col items-center border-r border-green-900/60 z-40 bg-black py-4 gap-4 transition-all duration-300 ease-in-out group">
         {user?.photoURL && (
-          <img
-            src={user.photoURL}
-            className="w-9 h-9 rounded-full border border-green-800 mb-2"
-            alt="avatar"
-          />
+          <img src={user.photoURL} className="w-9 h-9 rounded-full border border-green-800 mb-2" alt="avatar" />
         )}
         <button
-          className="text-green-600 hover:text-green-300 transition"
+          className="w-full flex justify-center items-center gap-3 px-4 py-3 transition-colors hover:bg-green-900/30 group/button"
           onClick={() => navigate("/home")}
-          title="Home"
+          title={t("home")}
         >
-          <Icon icon="pixelarticons:home" width={36} height={36} />
+          <Icon icon="pixelarticons:home" width={32} className="shrink-0 group-hover/button:w-[24px] transition-all duration-200" />
+          <span className="text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap overflow-hidden">{t("home")}</span>
         </button>
         <button
-          className="text-green-600 hover:text-green-300 transition"
+          className="w-full flex justify-center items-center gap-3 px-4 py-3 text-green-600 hover:text-green-300 transition-colors hover:bg-green-900/30 group/button"
           onClick={() => navigate("/trades")}
-          title="Trades"
+          title={t("trades_nav")}
         >
-          <Icon icon="pixelarticons:chart-add" width={36} height={36} />
+          <Icon icon="pixelarticons:chart-add" width={32} className="shrink-0 group-hover/button:w-[24px] transition-all duration-200" />
+          <span className="text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap overflow-hidden">{t("trades_nav")}</span>
+        </button>
+        <button
+          className="w-full flex justify-center items-center gap-3 px-4 py-3 text-green-600 hover:text-green-300 transition-colors hover:bg-green-900/30 group/button"
+          onClick={() => navigate("/analytics")}
+          title={t("analytics")}
+        >
+          <Icon icon="pixelarticons:analytics" width={32} className="shrink-0 group-hover/button:w-[24px] transition-all duration-200" />
+          <span className="text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap overflow-hidden">{t("analytics")}</span>
+        </button>
+        <button
+          className="w-full flex justify-center items-center gap-3 px-4 py-3 text-green-600 hover:text-green-300 transition-colors hover:bg-green-900/30 group/button"
+          onClick={() => navigate("/risk")}
+          title={t("risk_center")}
+        >
+          <Icon icon="pixelarticons:shield" width={32} className="shrink-0 group-hover/button:w-[24px] transition-all duration-200" />
+          <span className="text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap overflow-hidden">{t("risk_center")}</span>
+        </button>
+        <button
+          className="w-full flex justify-center items-center gap-3 px-4 py-3 text-green-600 hover:text-green-300 transition-colors hover:bg-green-900/30 group/button"
+          onClick={() => navigate("/journal")}
+          title={t("journal_insights")}
+        >
+          <Icon icon="pixelarticons:notes" width={32} className="shrink-0 group-hover/button:w-[24px] transition-all duration-200" />
+          <span className="text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap overflow-hidden">{t("journal_insights")}</span>
         </button>
       </aside>
 
-      {/* ── Mobile Bottom Nav ─────────────────────────────────────────── */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 h-16 border-t border-green-900/60 z-50 bg-black flex items-center justify-around px-6">
-        <button
-          className="flex flex-col items-center gap-0.5 text-green-600 hover:text-green-300 transition"
-          onClick={() => navigate("/home")}
-        >
-          <Icon icon="pixelarticons:home" width={28} height={28} />
-          <span className="text-xs">{t("home")}</span>
-        </button>
-        <button
-          className="flex flex-col items-center gap-0.5 text-green-600 hover:text-green-300 transition"
-          onClick={() => navigate("/trades")}
-        >
-          <Icon icon="pixelarticons:chart-add" width={28} height={28} />
-          <span className="text-xs">{t("trades_nav")}</span>
-        </button>
+      {/* ── Mobile Bottom Nav ── */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 h-16 border-t border-green-900/60 z-50 bg-black flex items-center justify-around px-2">
+        {[
+          { path: "/home",      icon: "pixelarticons:home",      label: t("home") },
+          { path: "/trades",    icon: "pixelarticons:chart-add",  label: t("trades_nav") },
+          { path: "/analytics", icon: "pixelarticons:bar-chart",  label: t("analytics") },
+          { path: "/risk",      icon: "pixelarticons:shield",     label: t("risk_center") },
+          { path: "/journal",   icon: "pixelarticons:notes",      label: t("journal_nav") },
+        ].map(({ path, icon, label }) => (
+          <button key={path} onClick={() => navigate(path)} className={`flex flex-col items-center gap-0.5 transition ${path === "/home" ? "text-green-dark" : "text-green-600 hover:text-green-300"}`}>
+            <Icon icon={icon} width={24} />
+            <span className="text-[9px]">{label}</span>
+          </button>
+        ))}
       </nav>
 
-      {/* ── Main Content ──────────────────────────────────────────────── */}
+            {/* ── Main Content ──────────────────────────────────────────────── */}
       {isLoggedIn && (
-        <main className="pt-16 md:ml-14 pb-20 md:pb-8 min-h-screen overflow-x-hidden">
+        <main className="pt-16 md:ml-20 pb-20 md:pb-8 min-h-screen overflow-x-hidden">
           <div className="p-4 sm:p-6 lg:p-8">
 
             <div className="flex flex-col xl:flex-row gap-6 items-start">
