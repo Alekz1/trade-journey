@@ -333,7 +333,7 @@ const TradeList: React.FC<TradeListProps> = ({
               <table className="min-w-full border border-green-900/50 text-xs">
 
                 {/* ── Column headers ── */}
-                <thead className="bg-green-950/40">
+                <thead className="bg-green-950/40 text-green-900 uppercase tracking-widest">
                   <tr>
                     <PlainTh label="" cls="w-7" />
                     <SortTh k="timestamp"   label={t("open_time")} />

@@ -213,3 +213,5 @@ __marimo__/
 #OCI API
 .oci
 .env.production
+# Continue AI configuration files
+.continue
