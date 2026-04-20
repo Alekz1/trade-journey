@@ -46,8 +46,8 @@ const PricingCard = ({ planKey, price, features, cta, popular = false, onCta }) 
       <div>
         <h3 className="text-green-dark font-workbech text-lg tracking-wide mb-3">{t(planKey)}</h3>
         <div className="flex items-end gap-1">
-          <span className="text-green-dark font-workbech text-4xl font-bold">${price}</span>
-          <span className="text-green-800 text-sm mb-1">{t("plan_month")}</span>
+          <span className="text-green-dark font-workbech text-4xl font-bold">{price}</span>
+          <span className="text-green-800  mb-1">Eur{t("plan_month")}</span>
         </div>
       </div>
       <div className="h-px bg-green-900/40" />

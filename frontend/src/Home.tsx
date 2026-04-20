@@ -151,6 +151,12 @@ const Home: React.FC = () => {
           TradeJourney
         </h1>
         <div className="flex items-center gap-2 sm:gap-3 overflow-hidden flex-1 justify-end">
+          <button className="border rounded-sm border-green-600/60 px-8 py-1 text-sm bg-green-500 text-black hover:bg-green-600 hover:text-gray-300 transition"
+                onClick={() => navigate("/trades")}
+                title={t("new_trade")}
+          >
+                {t("new_trade")}
+          </button>
           {isLoggedIn && (
             <JournalSelector
               selectedJournalId={selectedJournal?.id ?? null}
@@ -234,7 +240,7 @@ const Home: React.FC = () => {
           <div className="p-4 sm:p-6 lg:p-8">
 
             {/* Welcome + journal badge */}
-            <div className="flex flex-wrap items-baseline gap-3 mb-5">
+            <div className="flex flex-wrap items-center gap-3 mb-5">
               <h2 className="text-2xl sm:text-3xl lg:text-4xl text-green-dark">
                 {t("welcome")}, {user?.displayName ?? "Trader"}!
               </h2>
@@ -243,7 +249,7 @@ const Home: React.FC = () => {
                   <Icon icon="pixelarticons:notes" width={12} className="inline mr-1" />
                   {selectedJournal.name}
                 </span>
-              )}
+              )}   
             </div>
 
             {!selectedJournal && isJournalsLoaded && (

@@ -284,5 +284,6 @@
   "contact_email_value": "support@tradejourney.app",
   "contact_discord_label": "Discord",
   "contact_discord_value": "discord.gg/tradejourney",
-  "contact_github_value": "github.com/tradejourney"
+  "contact_github_value": "github.com/tradejourney",
+  "new_trade": "New Trade"
 }
