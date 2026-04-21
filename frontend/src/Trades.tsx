@@ -110,7 +110,11 @@ const Trades: React.FC = () => {
       fd.append("side", trade.side);
       fd.append("entry_price", String(trade.entry_price));
       fd.append("quantity", String(trade.quantity));
+      fd.append("jid", String(selectedJournal.id));
       fd.append("partial_closes", JSON.stringify(trade.partial_closes));
+      fd.append("message", trade.message ?? "");
+      fd.append("tags", JSON.stringify(trade.tags ?? []));
+      if (trade.timestamp) fd.append("timestamp", trade.timestamp);
       if (trade.file) fd.append("file", trade.file);
       await api.post<Trade>("/trades/", fd, {
         headers: { "Content-Type": "multipart/form-data" },
