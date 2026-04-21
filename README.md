@@ -17,6 +17,8 @@
 
 ### 1. `backend/app/.env`
 
+Структурата на базата данни се генерира автоматично стига да съществува.
+
 ```env
 SECRET_KEY=super-secret-key-change-this
 SQLALCHEMY_DATABASE_URL=mysql+pymysql://tradejournal:tradeproject@localhost:3306/tradejournal

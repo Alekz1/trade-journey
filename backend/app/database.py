@@ -3,6 +3,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import dotenv
 import os
+from dotenv import load_dotenv
+load_dotenv("app/.env", override=True)
 
 SQLALCHEMY_DATABASE_URL = os.getenv("SQLALCHEMY_DATABASE_URL")
 print(SQLALCHEMY_DATABASE_URL)
