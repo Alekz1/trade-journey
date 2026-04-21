@@ -285,7 +285,7 @@ const JournalSelector: React.FC<JournalSelectorProps> = ({
             <button
               onClick={handleCreate}
               disabled={!newName.trim() || creating}
-              className="flex-1 py-2.5 text-sm bg-green-dark border border-green-dark text-black hover:bg-green-600 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className={`flex-1 py-2.5 text-sm border border-green-900/60 text-green-700 transition disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${newName.trim() ? "hover:border-green-600 hover:text-green-500" : ""}`}
             >
               {creating
                 ? <><Icon icon="pixelarticons:refresh" className="animate-spin" width={14} />{t("journal_creating")}</>
