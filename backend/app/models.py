@@ -76,7 +76,7 @@ class Journal(Base):
 
     owner    = relationship("User", back_populates="journals")
     trades   = relationship("Trade", back_populates="journal", cascade="all, delete-orphan")
-    jsummary = relationship("JournalTradeSummary", back_populates="journal", uselist=False)
+    jsummary = relationship("JournalTradeSummary", back_populates="journal", uselist=False, cascade="all, delete-orphan")
 
 
 class JournalTradeSummary(Base):
