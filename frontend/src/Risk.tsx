@@ -11,8 +11,10 @@ import JournalSelector, { Journal } from "./components/JournalSelector";
 import { TimezoneSelector } from "./components/TimezoneSelect";
 import { ClockWithTimezone } from "./components/ClockWithTimezone";
 import { LanguageSelector } from "./components/LanguageSelector";
+import Header from "./components/Header";
 
 const TZ_KEY = "preferredTimezone";
+
 
 // ── Input field ────────────────────────────────────────────────────────────
 const CalcInput: React.FC<{
@@ -117,7 +119,8 @@ const Risk: React.FC = () => {
   const [rrEntry,  setRrEntry]  = useState("");
   const [rrStop,   setRrStop]   = useState("");
   const [rrTarget, setRrTarget] = useState("");
-
+  const [isJournalsLoaded, setIsJournalsLoaded] = useState(false);
+  
   // ── Fetch trades for historical stats ─────────────────────────────────────
   const fetchTrades = useCallback(async (j: Journal | null) => {
     if (!j) return;
@@ -210,36 +213,23 @@ const Risk: React.FC = () => {
     return { maxDd, maxStreak, avgLoss, rMult, trades: trades.length };
   }, [trades]);
 
+   // ── Misc handlers ──────────────────────────────────────────────────────────
+  const handleTimezoneChange = (tz: string) => {
+    setSelectedTz(tz);
+    localStorage.setItem(TZ_KEY, tz);
+  };
+
   return (
     <div className="font-jersey15 text-green-600 bg-black min-h-screen">
 
-      {/* ── Header ── */}
-      <header className="fixed top-0 inset-x-0 h-16 border-b border-green-900/60 z-50 bg-black flex items-center justify-between px-4 gap-3">
-        <h1
-          className="text-2xl sm:text-3xl text-green-dark font-workbech px-1 cursor-pointer shrink-0"
-          onClick={() => navigate("/")}
-        >
-          TradeJourney
-        </h1>
-        <div className="flex items-center gap-2 sm:gap-3 overflow-hidden flex-1 justify-end">
-          <button className="border rounded-sm border-green-600/60 px-8 py-1 text-sm bg-green-500 text-black hover:bg-green-600 hover:text-gray-300 transition"
-                onClick={() => navigate("/trades")}
-                title={t("new_trade")}
-          >
-                {t("new_trade")}
-          </button>
-          {isLoggedIn && (
-            <JournalSelector
-              selectedJournalId={journal?.id ?? null}
-              onJournalChange={handleJournalChange}
-            />
-          )}
-          <div className="hidden sm:block"><ClockWithTimezone timezone={selectedTz} /></div>
-          <TimezoneSelector selectedTz={selectedTz} onChange={tz => { setSelectedTz(tz); localStorage.setItem(TZ_KEY, tz); }} />
-          <LanguageSelector />
-          {!isLoggedIn ? <LoginSignupButton /> : <LogoutButton />}
-        </div>
-      </header>
+       <Header
+        isLoggedIn={isLoggedIn}
+        selectedJournal={journal}
+        selectedTz={selectedTz}
+        handleJournalChange={handleJournalChange}
+        handleTimezoneChange={handleTimezoneChange}
+        setIsJournalsLoaded={setIsJournalsLoaded}
+      ></Header>
 
       {/* ── Sidebar ── */}
       {/* ── Desktop Sidebar ── */}

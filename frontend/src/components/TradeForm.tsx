@@ -192,7 +192,7 @@ const TradeForm: React.FC<TradeFormProps> = ({ onAdd, compactMode, journalId }) 
       <div className={sectionCls}>
         <span className={sectionTitleCls}>{t("core_details", "Core Details")}</span>
         <div className="flex flex-col sm:flex-row gap-4 mb-4 mt-2">
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-20">
             <label className={labelCls}>{t("symbol")} *</label>
             <input name="symbol" value={form.symbol} onChange={handleChange} placeholder="BTCUSDT" className={inputCls} />
           </div>
@@ -200,7 +200,7 @@ const TradeForm: React.FC<TradeFormProps> = ({ onAdd, compactMode, journalId }) 
             <label className={labelCls}>{t("quantity")} *</label>
             <input name="quantity" value={form.quantity} onChange={handleChange} placeholder="0.1" className={inputCls} />
           </div>
-          <div className="w-full sm:w-28 shrink-0">
+          <div className="max-w-20 sm:w-28 shrink-0">
             <label className={labelCls}>{t("side")}</label>
             <select name="side" value={form.side} onChange={handleChange} className={`${selectCls} w-full`}>
               <option value="buy">{t("buy")}</option>

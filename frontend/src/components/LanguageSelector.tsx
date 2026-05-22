@@ -7,13 +7,12 @@ export const LanguageSelector: React.FC = () => {
   const [selectedLang, setSelectedLang] = useState<string>(i18n.language);
 
   useEffect(() => {
-    // Restore persisted language on mount; fall back to browser language then "bg"
     const stored = localStorage.getItem("i18nextLng");
-    const lang   = stored ?? i18n.language ?? "bg";
+    const lang = stored ?? i18n.language ?? "bg";
     i18n.changeLanguage(lang).catch(() => {});
     setSelectedLang(lang);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // intentionally run once on mount — i18n reference is stable
+  }, []); // intentionally once on mount
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const code = e.target.value;
@@ -27,12 +26,18 @@ export const LanguageSelector: React.FC = () => {
       value={selectedLang}
       onChange={handleChange}
       title="Language"
-      className="border border-green-600/60 text-green-600 bg-black px-2 py-1.5 text-sm
-                 focus:outline-none focus:ring-1 focus:ring-green-500
-                 max-w-[80px] sm:max-w-none"
+      className="
+        border border-green-600/60 text-green-600 bg-black
+        px-2 py-1.5 text-sm
+        focus:outline-none focus:ring-1 focus:ring-green-500
+        /* Full width inside mobile drawer; auto in header */
+        w-full sm:w-auto sm:max-w-[90px]
+      "
     >
       {LANGUAGES.map(({ code, label }: { code: string; label: string }) => (
-        <option key={code} value={code}>{label}</option>
+        <option key={code} value={code}>
+          {label}
+        </option>
       ))}
     </select>
   );

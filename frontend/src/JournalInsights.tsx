@@ -11,6 +11,7 @@ import JournalSelector, { Journal } from "./components/JournalSelector";
 import { TimezoneSelector } from "./components/TimezoneSelect";
 import { ClockWithTimezone } from "./components/ClockWithTimezone";
 import { LanguageSelector } from "./components/LanguageSelector";
+import Header from "./components/Header";
 
 const TZ_KEY = "preferredTimezone";
 
@@ -165,6 +166,7 @@ const JournalInsights: React.FC = () => {
   const [trades,     setTrades]     = useState<TradeWithMeta[]>([]);
   const [loading,    setLoading]    = useState(false);
   const [selectedTz, setSelectedTz] = useState("Local Timezone");
+  const [isJournalsLoaded, setIsJournalsLoaded] = useState(false);
 
   // ── Filter state ──────────────────────────────────────────────────────────
   const [search,      setSearch]      = useState("");
@@ -246,6 +248,11 @@ const JournalInsights: React.FC = () => {
       .sort((a, b) => b[1].trades - a[1].trades);
   }, [trades]);
 
+  const handleTimezoneChange = (tz: string) => {
+    setSelectedTz(tz);
+    localStorage.setItem(TZ_KEY, tz);
+  };
+
   // ── Best / worst 5 ────────────────────────────────────────────────────────
   const sorted     = useMemo(() => [...trades].sort((a, b) => b.pnl - a.pnl), [trades]);
   const best5      = sorted.slice(0, 5);
@@ -260,34 +267,15 @@ const JournalInsights: React.FC = () => {
 
   return (
     <div className="font-jersey15 text-green-600 bg-black min-h-screen">
-
-      {/* ── Header ── */}
-      <header className="fixed top-0 inset-x-0 h-16 border-b border-green-900/60 z-50 bg-black flex items-center justify-between px-4 gap-3">
-        <h1
-          className="text-2xl sm:text-3xl text-green-dark font-workbech px-1 cursor-pointer shrink-0"
-          onClick={() => navigate("/")}
-        >
-          TradeJourney
-        </h1>
-        <div className="flex items-center gap-2 sm:gap-3 overflow-hidden flex-1 justify-end">
-          <button className="border rounded-sm border-green-600/60 px-8 py-1 text-sm bg-green-500 text-black hover:bg-green-600 hover:text-gray-300 transition"
-                onClick={() => navigate("/trades")}
-                title={t("new_trade")}
-          >
-                {t("new_trade")}
-          </button>
-          {isLoggedIn && (
-            <JournalSelector
-              selectedJournalId={journal?.id ?? null}
-              onJournalChange={handleJournalChange}
-            />
-          )}
-          <div className="hidden sm:block"><ClockWithTimezone timezone={selectedTz} /></div>
-          <TimezoneSelector selectedTz={selectedTz} onChange={tz => { setSelectedTz(tz); localStorage.setItem(TZ_KEY, tz); }} />
-          <LanguageSelector />
-          {!isLoggedIn ? <LoginSignupButton /> : <LogoutButton />}
-        </div>
-      </header>
+      <Header
+        isLoggedIn={isLoggedIn}
+        selectedJournal={journal}
+        selectedTz={selectedTz}
+        handleJournalChange={handleJournalChange}
+        handleTimezoneChange={handleTimezoneChange}
+        setIsJournalsLoaded={setIsJournalsLoaded}
+      ></Header>
+    
 
       {/* ── Desktop Sidebar ── */}
       <aside className="hidden md:flex fixed left-0 top-16 h-[calc(100vh-4rem)] w-20 hover:w-48 flex-col items-center border-r border-green-900/60 z-40 bg-black py-4 gap-4 transition-all duration-300 ease-in-out group">

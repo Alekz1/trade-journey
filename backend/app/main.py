@@ -19,10 +19,17 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Trade Journal API")
 app.include_router(router)
 
-config = oci.config.from_file("./.oci/config", "DEFAULT")
-object_storage = oci.object_storage.ObjectStorageClient(config)
-NAMESPACE   = object_storage.get_namespace().data
 BUCKET_NAME = "trade-journey"
+try:
+    config = oci.config.from_file("./.oci/config", "DEFAULT")
+    object_storage = oci.object_storage.ObjectStorageClient(config)
+    NAMESPACE = object_storage.get_namespace().data
+    print("OCI object storage: connected")
+except Exception as _oci_err:
+    config = None
+    object_storage = None
+    NAMESPACE = None
+    print(f"OCI object storage: unavailable ({_oci_err}) — image upload/fetch disabled")
 
 app.add_middleware(
     CORSMiddleware,
@@ -131,6 +138,8 @@ async def add_trade_with_image(
     try:
         image_url = None
         if file:
+            if object_storage is None:
+                raise HTTPException(status_code=503, detail="Image storage is not configured on this server.")
             filename = f"{uuid.uuid4()}_{file.filename}"
             object_storage.put_object(NAMESPACE, BUCKET_NAME, filename, file.file)
             image_url = filename
@@ -261,6 +270,8 @@ def refresh_user_pnl(
 
 @app.get("/fetch-image/{image_name}")
 def fetch_image(image_name: str):
+    if object_storage is None:
+        raise HTTPException(status_code=503, detail="Image storage is not configured on this server.")
     try:
         response = object_storage.get_object(
             namespace_name=NAMESPACE,
