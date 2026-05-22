@@ -4,6 +4,7 @@ import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import api from "./services/api";
 import { Icon } from "@iconify/react";
 
+import Header from "./components/Header";
 import TradeList from "./components/TradeList";
 import TradePnL from "./components/TradePnL";
 import LoginSignupButton from "./components/LoginSignupButton";
@@ -145,31 +146,14 @@ const Home: React.FC = () => {
   return (
     <div className="font-jersey15 text-green-600 bg-black min-h-screen">
 
-            {/* ── Header ── */}
-      <header className="fixed top-0 inset-x-0 h-16 border-b border-green-900/60 z-50 bg-black flex items-center justify-between px-4 gap-3">
-        <h1 className="text-2xl sm:text-3xl text-green-dark font-workbech px-1 cursor-pointer shrink-0" onClick={() => navigate("/")}>
-          TradeJourney
-        </h1>
-        <div className="flex items-center gap-2 sm:gap-3 overflow-hidden flex-1 justify-end">
-          <button className="border rounded-sm border-green-600/60 px-8 py-1 text-sm bg-green-500 text-black hover:bg-green-600 hover:text-gray-300 transition"
-                onClick={() => navigate("/trades")}
-                title={t("new_trade")}
-          >
-                {t("new_trade")}
-          </button>
-          {isLoggedIn && (
-            <JournalSelector
-              selectedJournalId={selectedJournal?.id ?? null}
-              onJournalChange={handleJournalChange}
-              onLoaded={() => setTimeout(() => setIsJournalsLoaded(true), 10)}
-            />
-          )}
-          <div className="hidden sm:block"><ClockWithTimezone timezone={selectedTz} /></div>
-          <TimezoneSelector selectedTz={selectedTz} onChange={handleTimezoneChange} />
-          <LanguageSelector />
-          {!isLoggedIn ? <LoginSignupButton /> : <LogoutButton />}
-        </div>
-      </header>
+      <Header
+        isLoggedIn={isLoggedIn}
+        selectedJournal={selectedJournal}
+        selectedTz={selectedTz}
+        handleJournalChange={handleJournalChange}
+        handleTimezoneChange={handleTimezoneChange}
+        setIsJournalsLoaded={setIsJournalsLoaded}
+      ></Header>
 
       {/* ── Desktop Sidebar ── */}
       <aside className="hidden md:flex fixed left-0 top-16 h-[calc(100vh-4rem)] w-20 hover:w-48 flex-col items-center border-r border-green-900/60 z-40 bg-black py-4 gap-4 transition-all duration-300 ease-in-out group">
